@@ -1,0 +1,254 @@
+# ================================================
+# ArcaniteCrystals Configuration (v2.0)
+# Professional Minecraft Plugin Configuration
+# ================================================
+
+# Database Configuration
+# Supports Redis for high-performance servers
+database:
+  mode: redis  # Currently only 'redis' is supported
+  
+  # Redis Configuration - High performance data storage
+  redis:
+    host: localhost
+    port: 6379
+    password: ""           # Leave empty if no password
+    timeout: 2000          # Connection timeout in milliseconds
+    
+    # Connection Pool Settings (Advanced)
+    max-total: 128         # Maximum total connections
+    max-idle: 16           # Maximum idle connections
+    min-idle: 1            # Minimum idle connections
+
+# Crystal System Configuration
+crystal:
+  # Core Crystal Settings
+  material: DIAMOND        # Material for blank crystals (DIAMOND, EMERALD, etc.)
+  cooldown: 300           # Cooldown between crystal uses (seconds)
+  energy: 18000           # Maximum crystal energy (ticks) - 15 minutes default
+  drain: 80               # Energy drained per cycle (every 4 seconds)
+  
+  # Crystal Effect Settings
+  task-interval: 80       # How often effects are applied (ticks) - 4 seconds default
+  
+  # Crystal Appearance
+  glow-effect: true       # Whether crystals should have enchantment glow
+  
+  # Crystal Limits
+  max-crystals-per-player: 5  # Maximum crystals a player can hold
+
+# Recharge System Configuration
+recharge:
+  material: QUARTZ        # Material needed to recharge crystals
+  cost: 1                 # Amount of material needed per recharge
+  energy-restored: 9000   # Energy restored per recharge (50% of max)
+  
+  # Recharge Mechanics
+  allow-partial-recharge: true   # Allow recharging non-fully-depleted crystals
+  recharge-bonus-chance: 0.1     # 10% chance for bonus energy on recharge
+
+# Mining Effects Configuration
+mining:
+  effect-duration: 200    # Duration of mining effects (ticks) - 10 seconds
+  
+  # Auto-Smelt Configuration
+  auto-smelt:
+    experience-bonus: 0.25      # 25% bonus XP for auto-smelted ores
+    success-message-chance: 0.1 # 10% chance to show success message
+  
+  # Fortune Configuration
+  fortune:
+    base-multiplier: 1.5        # Base fortune multiplier for crystal effects
+    max-bonus-items: 5          # Maximum bonus items from fortune
+    rare-ore-bonus: 2.0         # Additional multiplier for rare ores
+
+# Level System Configuration
+levels:
+  # Level Progression
+  max-level: 10           # Maximum player level
+  
+  # Level Benefits
+  buff-application-delay: 20     # Delay before applying buffs (ticks)
+  buff-removal-on-logout: false  # Whether to remove buffs when player logs out
+  
+  # Level Validation
+  validate-on-join: true         # Validate player level on join
+  reset-invalid-levels: true     # Reset invalid levels to 1
+
+# Upgrade System Configuration
+upgrades:
+  # Purchase Settings
+  confirm-expensive-purchases: true  # Require confirmation for expensive upgrades
+  expensive-threshold: 100000        # Threshold for "expensive" purchases
+  
+  # Upgrade Validation
+  validate-on-startup: true          # Validate all upgrades on server start
+  remove-invalid-upgrades: true      # Remove invalid upgrades from players
+
+# Talent Menu Configuration
+talent-menu:
+  # Menu Layout
+  size: 54                # Menu size (must be multiple of 9)
+  upgrades-per-page: 15   # Upgrades shown per page
+  
+  # Menu Behavior
+  auto-refresh: true      # Auto-refresh menu when purchases are made
+  close-on-purchase: false # Close menu after successful purchase
+  
+  # Menu Effects
+  purchase-effects: true  # Show particle/sound effects on purchase
+  preview-effects: true   # Show preview effects when hovering
+
+# Sound Configuration
+sounds:
+  # Core Sounds
+  activate: ENTITY_EXPERIENCE_ORB_PICKUP
+  recharge: BLOCK_BEACON_ACTIVATE
+  
+  # Menu Sounds
+  menu-open: BLOCK_CHEST_OPEN
+  menu-close: BLOCK_CHEST_CLOSE
+  menu-click: UI_BUTTON_CLICK
+  
+  # Effect Sounds
+  level-up: UI_TOAST_CHALLENGE_COMPLETE
+  upgrade-unlock: ENTITY_PLAYER_LEVELUP
+  
+  # Error/Success Sounds
+  error: ENTITY_VILLAGER_NO
+  success: ENTITY_VILLAGER_YES
+  
+  # Mining Sounds
+  auto-smelt: ITEM_FIRECHARGE_USE
+  fortune: ENTITY_EXPERIENCE_ORB_PICKUP
+  
+  # Volume Settings
+  master-volume: 1.0      # Master volume multiplier
+  effect-volume: 0.8      # Volume for effect sounds
+  menu-volume: 0.6        # Volume for menu sounds
+
+# Particle Effects Configuration
+particles:
+  # Global Particle Settings
+  enabled: true           # Enable/disable all particle effects
+  density-multiplier: 1.0 # Multiplier for particle density
+  range: 32               # Range at which particles are visible
+  
+  # Specific Effect Settings
+  crystal-activation:
+    enabled: true
+    particle-count: 30
+    spread: 0.5
+  
+  upgrade-unlock:
+    enabled: true
+    particle-count: 50
+    duration: 60      # Duration in ticks
+  
+  level-up:
+    enabled: true
+    particle-count: 100
+    dramatic-effect: true
+  
+  mining-effects:
+    enabled: true
+    auto-smelt-particles: FLAME
+    fortune-particles: ENCHANT
+
+# Performance Configuration
+performance:
+  # Task Management
+  async-data-saving: true         # Save data asynchronously
+  batch-effect-application: true  # Apply effects in batches
+  
+  # Caching
+  cache-player-data: true         # Cache frequently accessed player data
+  cache-cleanup-interval: 300     # Cache cleanup interval (seconds)
+  
+  # Rate Limiting
+  effect-application-rate: 20     # Max effects applied per second
+  message-rate-limit: 60         # Seconds between repeated messages
+  
+  # Memory Management
+  auto-cleanup-disconnected: true # Clean up data for disconnected players
+  cleanup-delay: 300              # Delay before cleanup (seconds)
+
+# Admin Configuration
+admin:
+  # Logging
+  debug-mode: false               # Enable debug logging
+  log-level: INFO                 # Logging level (FINE, INFO, WARNING, SEVERE)
+  
+  # Monitoring
+  performance-monitoring: true    # Enable performance monitoring
+  health-checks: true            # Enable system health checks
+  statistics-logging: false      # Log performance statistics
+  
+  # Maintenance
+  auto-backup-config: true       # Automatically backup configuration
+  backup-interval-hours: 24      # Hours between automatic backups
+  max-backup-files: 7           # Maximum backup files to keep
+
+# Message Configuration
+messages:
+  # Global Message Settings
+  prefix: "&6[ArcaniteCrystals]&r " # Message prefix
+  
+  # Notification Settings
+  title-notifications: true       # Use title notifications for important messages
+  action-bar-updates: true       # Use action bar for status updates
+  
+  # Rate Limiting
+  duplicate-message-prevention: true  # Prevent duplicate messages
+  message-cooldown: 3                # Seconds between same messages
+
+# Integration Configuration
+integrations:
+  # PlaceholderAPI
+  placeholderapi:
+    enabled: true               # Enable PlaceholderAPI integration
+    refresh-interval: 30        # Placeholder refresh interval (seconds)
+  
+  # Vault Economy
+  vault:
+    enabled: true               # Enable Vault economy integration
+    decimal-places: 2           # Decimal places for money display
+    
+  # WorldGuard (future)
+  worldguard:
+    enabled: false              # Enable WorldGuard integration
+    respect-flags: true         # Respect WorldGuard flags
+
+# World Configuration
+worlds:
+  # World Restrictions
+  enabled-worlds: []            # List of enabled worlds (empty = all worlds)
+  disabled-worlds: []           # List of disabled worlds
+  
+  # Per-World Settings
+  per-world-data: false         # Whether to track data per-world
+  sync-across-worlds: true      # Sync data across worlds
+
+# Security Configuration
+security:
+  # Data Validation
+  strict-validation: true       # Enable strict data validation
+  sanitize-input: true         # Sanitize all user input
+  
+  # Anti-Cheat
+  detect-invalid-items: true    # Detect and remove invalid crystal items
+  prevent-duplication: true     # Prevent crystal duplication
+  
+  # Rate Limiting
+  max-commands-per-minute: 60   # Maximum commands per player per minute
+  
+# Experimental Features
+experimental:
+  # New Features (Use with caution)
+  advanced-crystal-crafting: true   # Enable advanced crafting recipes
+  dynamic-effect-scaling: true      # Scale effects based on player progress
+  achievement-system: false         # Enable built-in achievement system
+  
+  # Beta Features
+  multi-server-support: false       # Multi-server data sync (requires Redis)
+  api-integration: false            # RESTful API for external integrations

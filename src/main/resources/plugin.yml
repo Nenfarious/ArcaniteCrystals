@@ -1,0 +1,66 @@
+# plugin.yml
+name: ArcaniteCrystals
+version: 2.0.0
+main: dev.lsdmc.arcaniteCrystals.ArcaniteCrystals
+api-version: 1.21
+depend:
+  - Vault
+softdepend:
+  - PlaceholderAPI
+
+description: >
+  ArcaniteCrystals adds a custom progression system based on special crystals.
+  Players activate crystals for temporary buffs, level up for permanent bonuses,
+  and unlock upgrades through the talent menu system.
+
+author: LSD-MC Development Team
+website: https://github.com/LSD-MC/ArcaniteCrystals
+
+commands:
+  arcanite:
+    description: Main ArcaniteCrystals command - access all plugin features
+    usage: /arcanite <help|info|talents|give|mystery|reload|admin>
+    aliases: [arc, crystal]
+  givecrystal:
+    description: Give a blank Arcanite Crystal to a player
+    usage: /givecrystal <player>
+    permission: arcanite.give
+  mysterycrystal:
+    description: Receive a mystery Arcanite Crystal with random effects
+    usage: /mysterycrystal
+    permission: arcanite.mystery
+    aliases: [mystery]
+  levelup:
+    description: Level up if you meet the requirements
+    usage: /levelup
+    permission: arcanite.levelup
+    aliases: [lup, lvlup]
+
+permissions:
+  arcanite.*:
+    description: Access to all ArcaniteCrystals features
+    children:
+      arcanite.use: true
+      arcanite.talents: true
+      arcanite.give: true
+      arcanite.mystery: true
+      arcanite.levelup: true
+      arcanite.admin: true
+  arcanite.use:
+    description: Use crystals and basic commands
+    default: true
+  arcanite.talents:
+    description: Access the crystal upgrade menu
+    default: true
+  arcanite.give:
+    description: Give crystals to other players
+    default: op
+  arcanite.mystery:
+    description: Get mystery crystals
+    default: true
+  arcanite.levelup:
+    description: Use the levelup command
+    default: true
+  arcanite.admin:
+    description: Access admin commands and tools
+    default: op

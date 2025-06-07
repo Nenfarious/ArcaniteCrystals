@@ -1,0 +1,106 @@
+# -------------------------------------------------
+# Arcanite Crystals – Messages (v2.0)
+# -------------------------------------------------
+
+usage:
+  give:              "&e&lUsage&7: /arcanite give <player>"
+  mystery:           "&e&lUsage&7: /arcanite mystery"
+  talents:           "&e&lUsage&7: /arcanite talents"
+  reload:            "&e&lUsage&7: /arcanite reload"
+  info:              "&e&lUsage&7: /arcanite info"
+  cooldown:          "&e&lUsage&7: /arcanite cooldown"
+  levelup:           "&e&lUsage&7: /levelup"
+  admin:             "&e&lUsage&7: /arcanite admin <setlevel|grant|revoke|resetcooldown|resetenergy|view> …"
+  setlevel:          "&e&lUsage&7: /arcanite admin setlevel <player> <level>"
+  grant:             "&e&lUsage&7: /arcanite admin grant <player> <upgradeId>"
+  revoke:            "&e&lUsage&7: /arcanite admin revoke <player> <upgradeId>"
+  resetcooldown:     "&e&lUsage&7: /arcanite admin resetcooldown <player>"
+  resetenergy:       "&e&lUsage&7: /arcanite admin resetenergy <player>"
+  view:              "&e&lUsage&7: /arcanite admin view <player>"
+
+error:
+  playerNotFound:    "&c&lError&7: Player not found."
+  playersOnly:       "&c&lError&7: Only players may use this command."
+  noPermission:      "&c&lError&7: You do not have permission."
+  unknown:           "&c&lError&7: Unknown command. Use &e/arcanite help &7for assistance."
+  unknownAdmin:      "&c&lError&7: Unknown admin sub-command."
+  invalidNumber:     "&c&lError&7: Value must be a valid number."
+  requirements:      "&c&lError&7: You do not meet the requirements to level up."
+  maxLevel:          "&c&lError&7: You are already at max level."
+  cooldownWait:      "&c&lError&7: Please wait {seconds}s before using another crystal."
+  noUpgrades:        "&c&lError&7: No upgrades available at your tier."
+  noRequirements:    "&c&lError&7: No requirements configured for that level."
+  insufficientFunds: "&c&lError&7: You need ${amount} to purchase that."
+  insufficientXP:    "&c&lError&7: You need {amount} XP to purchase that."
+  alreadyOwned:      "&c&lError&7: You have already unlocked this upgrade."
+  tierRequirement:   "&c&lError&7: Requires Tier {tier} to purchase this upgrade."
+  noSuchUpgrade:     "&c&lError&7: No such upgrade &e{id}&c."
+  noEconomy:         "&c&lError&7: Economy system is not available."
+  noPurchaseInfo:    "&c&lError&7: Purchase information is missing for this upgrade."
+  invalidItem:       "&c&lError&7: Invalid item type configured for purchase."
+  insufficientItems: "&c&lError&7: You don't have enough items for this purchase."
+  invalidPurchaseType: "&c&lError&7: Invalid purchase type configured."
+  invalidStat:       "&c&lError&7: Invalid stat type: {stat}"
+
+success:
+  give:             "&a&lSuccess&7: Gave a blank Arcanite Crystal to &b{player}&7."
+  mystery:          "&a&lSuccess&7: You received a &dMystery Arcanite Crystal&7!"
+  reload:           "&a&lSuccess&7: Configuration reloaded."
+  activated:        "&b&lActivated&7: Crystal powers active&7: &e{abilities}"
+  talentsOpen:      "&b&lOpening&7: Crystal Upgrades GUI..."
+  unlocked:         "&a&lUnlocked&7: You purchased &b{upgrade}&7!"
+  grant:            "&a&lSuccess&7: Granted &b{upgrade} &7to &b{player}&7."
+  revoke:           "&a&lSuccess&7: Revoked &b{upgrade} &7from &b{player}&7."
+  setLevel:         "&a&lSuccess&7: Set &b{player} &7to level &b{level}&7."
+  resetCooldown:    "&a&lSuccess&7: Reset cooldown for &b{player}&7."
+  resetEnergy:      "&a&lSuccess&7: Refilled crystal energy for &b{player}&7."
+  rankup:           "&a&lLevel Up!&7: You advanced to Level &b{level}&7!"
+  recharged:        "&a&lRecharged&7: Crystal energy restored to &b{time}&7!"
+
+info:
+  header:           "&6&lArcanite Crystals&7 (v2.0)"
+  body:             "&7Off-hand crystals with evolving powers and progression."
+  cooldown:         "&b&lNotice&7: Crystal cooldowns are managed automatically."
+  notDepleted:      "&e&lNotice&7: Your crystal still has energy."
+  depleted:         "&7&lNotice&7: Your crystal has run out of energy!"
+  viewHeader:       "&6&l— Info for &b{player}&6 —"
+  viewLevel:        "&7Level: &e{level}   &7Slots: &e{slots}   &7MaxTier: &e{tier}"
+  viewUpgrades:     "&7Upgrades: &e{upgrades}"
+
+help:
+  header:           "&6&l— Arcanite Crystals Help —"
+  give:             "&e/arcanite give <player> &7– Give a blank crystal"
+  mystery:          "&e/arcanite mystery &7– Receive a mystery crystal"
+  talents:          "&e/arcanite talents &7– Open the Upgrade GUI"
+  reload:           "&e/arcanite reload &7– Reload plugin configuration"
+  info:             "&e/arcanite info &7– Show plugin information"
+  cooldown:         "&e/arcanite cooldown &7– View cooldown status"
+  levelup:          "&e/levelup &7– Rank up to the next level"
+  admin:            "&e/arcanite admin &7– Access admin tools"
+  footer:           "&6&l———————————————————————————————"
+
+gui:
+  talents:
+    title:        "&5&lCrystal Upgrades"
+    prev:         "&a« Previous"
+    next:         "&aNext »"
+    close:        "&cClose"
+    itemName:     "&f{ability} {arcanite_effect_level}"
+    cost:         "&eCost: {cost}"
+    click:        "&7<Click to Unlock>"
+    unlocked:     "&aUnlocked"
+
+lore:
+  blank:          "&7(Unidentified)"
+  holdOffHand:    "&7(Hold In Off-Hand)"
+  abilityLine:    "&f - {ability} {arcanite_effect_level}"
+  timeLeft:       "&7Time Left: &b{time}"
+  crystalName:    "&dARCANITE CRYSTAL"
+
+crystal:
+  name:           "&dARCANITE CRYSTAL"
+  equipped:       "&b&lCrystal Equipped&7: Crystal effects will activate when held in off-hand."
+
+# -------------------------------------------------
+# End of Messages
+# -------------------------------------------------

@@ -1,0 +1,113 @@
+# levels.yml
+# Defines Levels I–X: tags, rank-up requirements, permanent buffs,
+# how many crystal effects roll, and highest effect tier available.
+
+level-1:
+  tag: "&7[ɪ]"
+  requirements:
+    money: 2500
+    kills: 10
+    time: 0      # hours
+  tier: 1        # max-effect-tier
+  crystal-slots: 1
+  buffs:
+    walk_speed: 0.02
+
+level-2:
+  tag: "&7[ɪɪ]"
+  requirements:
+    money: 10000
+    kills: 0
+    time: 2      # hours
+  tier: 1
+  crystal-slots: 1
+  buffs:
+    max_health: 2.0
+
+level-3:
+  tag: "&6[ɪɪɪ]"
+  requirements:
+    money: 25000
+    kills: 50
+    time: 8      # hours
+  tier: 2
+  crystal-slots: 2
+  buffs:
+    walk_speed: 0.03
+
+level-4:
+  tag: "&b[ɪᴠ]"
+  requirements:
+    money: 50000
+    kills: 0
+    time: 24     # hours
+  tier: 2
+  crystal-slots: 2
+  buffs:
+    max_health: 4.0
+
+level-5:
+  tag: "&b[ᴠ]"
+  requirements:
+    money: 100000
+    kills: 150
+    time: 48     # hours
+  tier: 2
+  crystal-slots: 3
+  buffs:
+    walk_speed: 0.05
+
+level-6:
+  tag: "&b[ᴠɪ]"
+  requirements:
+    money: 250000
+    kills: 0
+    time: 72     # hours
+  tier: 2
+  crystal-slots: 3
+  buffs:
+    max_health: 6.0
+
+level-7:
+  tag: "&d[ᴠɪɪ]"
+  requirements:
+    money: 500000
+    kills: 300
+    time: 144    # hours
+  tier: 3
+  crystal-slots: 4
+  buffs:
+    walk_speed: 0.07
+
+level-8:
+  tag: "&d[ᴠɪɪɪ]"
+  requirements:
+    money: 750000
+    kills: 0
+    time: 200    # hours
+  tier: 3
+  crystal-slots: 4
+  buffs:
+    max_health: 8.0
+
+level-9:
+  tag: "&c[ɪx]"
+  requirements:
+    money: 1000000
+    kills: 500
+    time: 280    # hours
+  tier: 3
+  crystal-slots: 5
+  buffs:
+    walk_speed: 0.10
+
+level-10:
+  tag: "&4[x]"
+  requirements:
+    money: 2000000
+    kills: 0
+    time: 360    # hours
+  tier: 3
+  crystal-slots: 5
+  buffs:
+    max_health: 10.0

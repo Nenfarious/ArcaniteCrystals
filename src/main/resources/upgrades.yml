@@ -1,0 +1,162 @@
+# upgrades.yml
+# Defines all crystal‐upgrade entries (tiers I–III) for the effects currently supported.
+
+upgrades:
+  # ───────── Tier I ─────────
+  speed_I:
+    tier: 1
+    effect: SPEED
+    amplifier: 0
+    buy:
+      type: money
+      amount: 5000
+
+  regeneration_I:
+    tier: 1
+    effect: REGENERATION
+    amplifier: 0
+    buy:
+      type: exp
+      amount: 300
+
+  jump_I:
+    tier: 1
+    effect: JUMP_BOOST
+    amplifier: 0
+    buy:
+      type: exp
+      amount: 200
+
+  haste_I:
+    tier: 1
+    effect: HASTE
+    amplifier: 0
+    buy:
+      type: money
+      amount: 15000
+
+  strength_I:
+    tier: 1
+    effect: STRENGTH
+    amplifier: 0
+    buy:
+      type: item
+      id: DIAMOND_BLOCK
+      amount: 4
+
+  echo_I:
+    tier: 1
+    effect: DAMAGE_RESISTANCE
+    amplifier: 0
+    buy:
+      type: money
+      amount: 50000
+
+  # ───────── Tier II ─────────
+  speed_II:
+    tier: 2
+    effect: SPEED
+    amplifier: 1
+    buy:
+      type: money
+      amount: 15000
+
+  regeneration_II:
+    tier: 2
+    effect: REGENERATION
+    amplifier: 1
+    buy:
+      type: exp
+      amount: 800
+
+  jump_II:
+    tier: 2
+    effect: JUMP_BOOST
+    amplifier: 1
+    buy:
+      type: exp
+      amount: 600
+
+  haste_II:
+    tier: 2
+    effect: HASTE
+    amplifier: 1
+    buy:
+      type: money
+      amount: 30000
+
+  strength_II:
+    tier: 2
+    effect: STRENGTH
+    amplifier: 1
+    buy:
+      type: item
+      id: GOLD_BLOCK
+      amount: 6
+
+  echo_II:
+    tier: 2
+    effect: DAMAGE_RESISTANCE
+    amplifier: 1
+    buy:
+      type: money
+      amount: 100000
+
+  # ───────── Tier III ─────────
+  speed_III:
+    tier: 3
+    effect: SPEED
+    amplifier: 2
+    buy:
+      type: money
+      amount: 35000
+
+  regeneration_III:
+    tier: 3
+    effect: REGENERATION
+    amplifier: 2
+    buy:
+      type: exp
+      amount: 1500
+
+  jump_III:
+    tier: 3
+    effect: JUMP_BOOST
+    amplifier: 2
+    buy:
+      type: exp
+      amount: 1200
+
+  haste_III:
+    tier: 3
+    effect: HASTE
+    amplifier: 2
+    buy:
+      type: money
+      amount: 50000
+
+  strength_III:
+    tier: 3
+    effect: STRENGTH
+    amplifier: 2
+    buy:
+      type: item
+      id: DIAMOND_BLOCK
+      amount: 8
+
+  echo_III:
+    tier: 3
+    effect: DAMAGE_RESISTANCE
+    amplifier: 2
+    buy:
+      type: money
+      amount: 200000
+
+  poison_III:
+    tier: 3
+    effect: POISON
+    amplifier: 2
+    buy:
+      type: money
+      amount: 200000
+
