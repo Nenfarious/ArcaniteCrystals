@@ -368,4 +368,8 @@ public class MessageManager {
             return hasParticles; 
         }
     }
+
+    public static String colorize(String message) {
+        return ChatColor.translateAlternateColorCodes('&', message);
+    }
 }

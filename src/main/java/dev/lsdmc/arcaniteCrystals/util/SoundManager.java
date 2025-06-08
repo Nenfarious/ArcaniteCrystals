@@ -304,9 +304,74 @@ public class SoundManager {
     }
 
     /**
+     * Plays decay sound effects for a player.
+     */
+    public static void playCrystalDecaySound(Player player) {
+        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_BREAK, 0.5f, 0.8f);
+        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.3f, 1.0f);
+    }
+
+    /**
+     * Plays corruption sound effects for a player.
+     */
+    public static void playCrystalCorruptionSound(Player player) {
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_DESTROY, 0.5f, 0.7f);
+        player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.3f, 1.2f);
+    }
+
+    /**
+     * Plays crystal destruction sound effects for a player.
+     */
+    public static void playCrystalDestructionSound(Player player) {
+        player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.7f, 0.8f);
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_DESTROY, 0.5f, 0.5f);
+        player.playSound(player.getLocation(), Sound.ENTITY_WITHER_DEATH, 0.3f, 1.0f);
+    }
+
+    /**
+     * Plays socket sound effects for a player.
+     */
+    public static void playCrystalSocketSound(Player player) {
+        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.5f, 1.2f);
+        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.3f, 1.0f);
+    }
+    
+    /**
+     * Plays socket removal sound effects for a player.
+     */
+    public static void playCrystalSocketRemoveSound(Player player) {
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_DESTROY, 0.5f, 1.0f);
+        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.3f, 0.8f);
+    }
+
+    /**
+     * Plays fusion sound effect for a player.
+     */
+    public static void playCrystalFusionSound(Player player) {
+        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1.0f, 1.2f);
+        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 1.5f);
+    }
+    
+    /**
+     * Plays fusion failure sound effect for a player.
+     */
+    public static void playCrystalFusionFailSound(Player player) {
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_DESTROY, 1.0f, 0.5f);
+        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.8f, 0.8f);
+    }
+
+    /**
      * Menu sound types for different interactions.
      */
     public enum MenuSoundType {
         OPEN, CLOSE, CLICK, ERROR, SUCCESS
+    }
+
+    /**
+     * Plays regeneration sound effects for a player.
+     */
+    public static void playCrystalRegenSound(Player player) {
+        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_AMBIENT, 0.5f, 1.2f);
+        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.3f, 1.0f);
     }
 } 

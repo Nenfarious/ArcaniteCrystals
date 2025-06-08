@@ -5,6 +5,7 @@ import dev.lsdmc.arcaniteCrystals.util.MessageManager;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
@@ -376,5 +377,279 @@ public class ParticleManager {
         Particle.DustOptions orangeDust = new Particle.DustOptions(Color.ORANGE, 1.2f);
         player.spawnParticle(Particle.DUST, loc, 15, 0.5, 0.3, 0.5, 0.01, orangeDust);
         player.spawnParticle(Particle.SMOKE, loc, 5, 0.2, 0.2, 0.2, 0.01);
+    }
+
+    /**
+     * Plays error particle effects around a player.
+     */
+    public static void playErrorEffect(Player player) {
+        Location loc = player.getLocation();
+        player.getWorld().spawnParticle(Particle.SMOKE, loc, 20, 0.5, 0.5, 0.5, 0.1);
+        player.getWorld().spawnParticle(Particle.DUST, loc, 15, 0.5, 0.5, 0.5, 0.1, 
+            new Particle.DustOptions(Color.RED, 1));
+    }
+
+    /**
+     * Plays decay effect particles around a player.
+     */
+    public static void playCrystalDecayEffect(Player player) {
+        Location loc = player.getLocation();
+        World world = loc.getWorld();
+        
+        // Spawn smoke particles
+        for (int i = 0; i < 10; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = Math.random() * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.SMOKE, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // Spawn dust particles
+        for (int i = 0; i < 5; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = Math.random() * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.DUST, particleLoc, 1, 0, 0, 0, 0,
+                new Particle.DustOptions(Color.GRAY, 1.0f));
+        }
+    }
+
+    /**
+     * Plays corruption effect particles around a player.
+     */
+    public static void playCrystalCorruptionEffect(Player player) {
+        Location loc = player.getLocation();
+        World world = loc.getWorld();
+        
+        // Spawn smoke particles
+        for (int i = 0; i < 15; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = Math.random() * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.SMOKE, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // Spawn dust particles
+        for (int i = 0; i < 8; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = Math.random() * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.DUST, particleLoc, 1, 0, 0, 0, 0,
+                new Particle.DustOptions(Color.PURPLE, 1.0f));
+        }
+    }
+
+    /**
+     * Plays crystal destruction effect particles around a player.
+     */
+    public static void playCrystalDestructionEffect(Player player) {
+        Location loc = player.getLocation();
+        World world = loc.getWorld();
+        
+        // Spawn explosion particles
+        world.spawnParticle(Particle.EXPLOSION, loc, 1, 0, 0, 0, 0);
+        
+        // Spawn smoke particles
+        for (int i = 0; i < 20; i++) {
+            double offsetX = (Math.random() - 0.5) * 3;
+            double offsetY = Math.random() * 3;
+            double offsetZ = (Math.random() - 0.5) * 3;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.SMOKE, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // Spawn dust particles
+        for (int i = 0; i < 15; i++) {
+            double offsetX = (Math.random() - 0.5) * 3;
+            double offsetY = Math.random() * 3;
+            double offsetZ = (Math.random() - 0.5) * 3;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.DUST, particleLoc, 1, 0, 0, 0, 0,
+                new Particle.DustOptions(Color.fromRGB(75, 0, 130), 1.0f));
+        }
+    }
+
+    /**
+     * Plays socket effect particles around a player.
+     */
+    public static void playCrystalSocketEffect(Player player) {
+        Location loc = player.getLocation();
+        World world = loc.getWorld();
+        
+        // Spawn sparkle particles
+        for (int i = 0; i < 15; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = Math.random() * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.END_ROD, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // Spawn dust particles
+        for (int i = 0; i < 8; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = Math.random() * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.DUST, particleLoc, 1, 0, 0, 0, 0,
+                new Particle.DustOptions(Color.PURPLE, 1.0f));
+        }
+    }
+    
+    /**
+     * Plays socket failure effect particles around a player.
+     */
+    public static void playCrystalSocketFailEffect(Player player) {
+        Location loc = player.getLocation();
+        World world = loc.getWorld();
+        
+        // Spawn smoke particles
+        for (int i = 0; i < 20; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = Math.random() * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.SMOKE, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // Spawn red particles
+        for (int i = 0; i < 10; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = Math.random() * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.DUST, particleLoc, 1, 0, 0, 0, 0,
+                new Particle.DustOptions(Color.RED, 1.0f));
+        }
+    }
+    
+    /**
+     * Plays socket removal effect particles around a player.
+     */
+    public static void playCrystalSocketRemoveEffect(Player player) {
+        Location loc = player.getLocation();
+        World world = loc.getWorld();
+        
+        // Spawn smoke particles
+        for (int i = 0; i < 10; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = Math.random() * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.SMOKE, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // Spawn dust particles
+        for (int i = 0; i < 5; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = Math.random() * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.DUST, particleLoc, 1, 0, 0, 0, 0,
+                new Particle.DustOptions(Color.GRAY, 1.0f));
+        }
+    }
+
+    /**
+     * Plays fusion effect particles around a player.
+     */
+    public static void playCrystalFusionEffect(Player player) {
+        Location loc = player.getLocation();
+        World world = loc.getWorld();
+        
+        // Spawn sparkle particles
+        for (int i = 0; i < 40; i++) {
+            double offsetX = (Math.random() - 0.5) * 3;
+            double offsetY = Math.random() * 3;
+            double offsetZ = (Math.random() - 0.5) * 3;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.END_ROD, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // Spawn dust particles
+        for (int i = 0; i < 20; i++) {
+            double offsetX = (Math.random() - 0.5) * 3;
+            double offsetY = Math.random() * 3;
+            double offsetZ = (Math.random() - 0.5) * 3;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.DUST, particleLoc, 1, 0, 0, 0, 0,
+                new Particle.DustOptions(Color.PURPLE, 1.5f));
+        }
+    }
+    
+    /**
+     * Plays fusion failure effect particles around a player.
+     */
+    public static void playCrystalFusionFailEffect(Player player) {
+        Location loc = player.getLocation();
+        World world = loc.getWorld();
+        
+        // Spawn smoke particles
+        for (int i = 0; i < 30; i++) {
+            double offsetX = (Math.random() - 0.5) * 3;
+            double offsetY = Math.random() * 3;
+            double offsetZ = (Math.random() - 0.5) * 3;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.SMOKE, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // Spawn red particles
+        for (int i = 0; i < 15; i++) {
+            double offsetX = (Math.random() - 0.5) * 3;
+            double offsetY = Math.random() * 3;
+            double offsetZ = (Math.random() - 0.5) * 3;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.DUST, particleLoc, 1, 0, 0, 0, 0,
+                new Particle.DustOptions(Color.RED, 1.5f));
+        }
+    }
+
+    /**
+     * Plays regeneration effect particles around a player.
+     */
+    public static void playCrystalRegenEffect(Player player) {
+        Location loc = player.getLocation();
+        World world = loc.getWorld();
+        
+        // Spawn sparkle particles
+        for (int i = 0; i < 10; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = Math.random() * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.END_ROD, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // Spawn dust particles
+        for (int i = 0; i < 5; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = Math.random() * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            Location particleLoc = loc.clone().add(offsetX, offsetY, offsetZ);
+            world.spawnParticle(Particle.DUST, particleLoc, 1, 0, 0, 0, 0,
+                new Particle.DustOptions(Color.AQUA, 1.0f));
+        }
     }
 } 

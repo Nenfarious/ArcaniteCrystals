@@ -52,24 +52,13 @@ public class ConfigValidator {
 
     private static void validateMainConfig(FileConfiguration config) {
         // Database settings
-        String dbMode = config.getString("database.mode", "redis");
-        if (!"redis".equalsIgnoreCase(dbMode)) {
-            errors.add("Invalid database.mode: '" + dbMode + "'. Only 'redis' is supported.");
+        String dbMode = config.getString("database.mode", "sqlite");
+        if (!"redis".equalsIgnoreCase(dbMode) && !"sqlite".equalsIgnoreCase(dbMode)) {
+            errors.add("Invalid database.mode: '" + dbMode + "'. Must be 'redis' or 'sqlite'.");
         }
-
-        String redisHost = config.getString("database.redis.host");
-        if (redisHost == null || redisHost.trim().isEmpty()) {
-            errors.add("database.redis.host cannot be null or empty");
-        }
-
-        int redisPort = config.getInt("database.redis.port", 6379);
-        if (redisPort < 1 || redisPort > 65535) {
-            errors.add("database.redis.port must be between 1-65535, got: " + redisPort);
-        }
-
-        int timeout = config.getInt("database.redis.timeout", 2000);
-        if (timeout < 100) {
-            warnings.add("Very low Redis timeout (" + timeout + "ms). Consider increasing for stability.");
+        
+        if ("redis".equalsIgnoreCase(dbMode)) {
+            validateRedisConfig(config);
         }
 
         // Crystal settings
@@ -93,14 +82,37 @@ public class ConfigValidator {
         int drain = config.getInt("crystal.drain", 80);
         if (drain <= 0) {
             errors.add("crystal.drain must be positive: " + drain);
-        } else if (drain >= energy) {
-            warnings.add("Crystal drain (" + drain + ") is very high compared to energy (" + energy + ")");
+        } else if (drain > energy) {
+            errors.add("crystal.drain (" + drain + ") cannot be greater than energy (" + energy + ")");
+        }
+
+        int taskInterval = config.getInt("crystal.task-interval", 80);
+        if (taskInterval < 20) {
+            warnings.add("Very low task-interval (" + taskInterval + " ticks). This may impact performance.");
         }
 
         // Recharge settings
         String rechargeMaterial = config.getString("recharge.material", "QUARTZ");
         if (Material.matchMaterial(rechargeMaterial) == null) {
             errors.add("Invalid recharge.material: '" + rechargeMaterial + "'");
+        }
+
+        int rechargeCost = config.getInt("recharge.cost", 1);
+        if (rechargeCost <= 0) {
+            errors.add("recharge.cost must be positive: " + rechargeCost);
+        }
+
+        int energyRestored = config.getInt("recharge.energy-restored", 9000);
+        if (energyRestored <= 0) {
+            errors.add("recharge.energy-restored must be positive: " + energyRestored);
+        } else if (energyRestored > energy) {
+            errors.add("recharge.energy-restored (" + energyRestored + 
+                      ") cannot be greater than crystal.energy (" + energy + ")");
+        }
+
+        double bonusChance = config.getDouble("recharge.bonus-chance", 0.1);
+        if (bonusChance < 0 || bonusChance > 1) {
+            errors.add("recharge.bonus-chance must be between 0 and 1: " + bonusChance);
         }
 
         // Mining settings
@@ -158,6 +170,44 @@ public class ConfigValidator {
             }
         } catch (Exception e) {
             warnings.add("Could not validate sound configurations: " + e.getMessage());
+        }
+    }
+
+    private static void validateRedisConfig(FileConfiguration config) {
+        String host = config.getString("database.redis.host");
+        if (host == null || host.trim().isEmpty()) {
+            errors.add("database.redis.host cannot be null or empty");
+        }
+        
+        int port = config.getInt("database.redis.port", 6379);
+        if (port < 1 || port > 65535) {
+            errors.add("database.redis.port must be between 1-65535, got: " + port);
+        }
+        
+        int timeout = config.getInt("database.redis.timeout", 2000);
+        if (timeout < 100) {
+            warnings.add("Very low Redis timeout (" + timeout + "ms). Consider increasing for stability.");
+        }
+        
+        int maxTotal = config.getInt("database.redis.max-total", 128);
+        if (maxTotal < 1) {
+            errors.add("database.redis.max-total must be positive: " + maxTotal);
+        }
+        
+        int maxIdle = config.getInt("database.redis.max-idle", 16);
+        if (maxIdle < 1) {
+            errors.add("database.redis.max-idle must be positive: " + maxIdle);
+        } else if (maxIdle > maxTotal) {
+            errors.add("database.redis.max-idle (" + maxIdle + 
+                      ") cannot be greater than max-total (" + maxTotal + ")");
+        }
+        
+        int minIdle = config.getInt("database.redis.min-idle", 1);
+        if (minIdle < 0) {
+            errors.add("database.redis.min-idle cannot be negative: " + minIdle);
+        } else if (minIdle > maxIdle) {
+            errors.add("database.redis.min-idle (" + minIdle + 
+                      ") cannot be greater than max-idle (" + maxIdle + ")");
         }
     }
 

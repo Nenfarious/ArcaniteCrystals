@@ -53,7 +53,7 @@ permissions:
     description: Access the crystal upgrade menu
     default: true
   arcanite.give:
-    description: Give crystals to other players
+    description: Allows giving crystals to players
     default: op
   arcanite.mystery:
     description: Get mystery crystals
@@ -62,5 +62,8 @@ permissions:
     description: Use the levelup command
     default: true
   arcanite.admin:
-    description: Access admin commands and tools
+    description: Gives access to all ArcaniteCrystals commands
     default: op
+  arcanite.crafting:
+    description: Allows viewing crystal crafting recipes
+    default: true

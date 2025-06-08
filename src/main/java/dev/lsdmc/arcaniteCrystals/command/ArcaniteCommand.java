@@ -4,12 +4,17 @@ package dev.lsdmc.arcaniteCrystals.command;
 import dev.lsdmc.arcaniteCrystals.config.ConfigManager;
 import dev.lsdmc.arcaniteCrystals.menu.TalentMenu;
 import dev.lsdmc.arcaniteCrystals.util.MessageManager;
+import dev.lsdmc.arcaniteCrystals.manager.CrystalManager;
+import dev.lsdmc.arcaniteCrystals.menu.CraftingMenu;
+import dev.lsdmc.arcaniteCrystals.menu.ArcaniteMainMenu;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.ChatColor;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,15 +26,15 @@ import java.util.stream.Collectors;
 public class ArcaniteCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBS = Arrays.asList(
-            "help", "info", "talents", "give", "mystery", "reload", "stats", "health", "admin", "crafting"
+            "help", "info", "talents", "give", "mystery", "reload", "stats", "health", "admin", "crafting",
+            "setlevel", "grant", "revoke", "view", "cooldown", "energy", "maintenance"
     );
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        // No args -> show help
         if (args.length == 0) {
             if (sender instanceof Player) {
-                sendHelp((Player) sender);
+                new ArcaniteMainMenu((Player) sender).open();
             } else {
                 sendConsoleHelp(sender);
             }
@@ -37,88 +42,104 @@ public class ArcaniteCommand implements CommandExecutor, TabCompleter {
         }
 
         String sub = args[0].toLowerCase();
+        
         switch (sub) {
             case "help":
-            case "info":
                 if (sender instanceof Player) {
                     sendHelp((Player) sender);
                 } else {
                     sendConsoleHelp(sender);
                 }
                 break;
-
+                
             case "talents":
                 if (!(sender instanceof Player)) {
-                    sender.sendMessage(MessageManager.get("error.playersOnly"));
-                    break;
+                    sender.sendMessage(ChatColor.RED + "This command can only be used by players!");
+                    return true;
                 }
                 if (!sender.hasPermission("arcanite.talents")) {
-                    sender.sendMessage(MessageManager.get("error.noPermission"));
-                    break;
+                    sender.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
+                    return true;
                 }
                 new TalentMenu((Player) sender).open();
                 break;
-
-            case "give":
-                // Forward to GiveCommand
-                String[] giveArgs = args.length > 1
-                        ? Arrays.copyOfRange(args, 1, args.length)
-                        : new String[0];
-                return new GiveCommand().onCommand(sender, cmd, label, giveArgs);
-
-            case "mystery":
-                // Forward to MysteryCommand
-                return new MysteryCommand().onCommand(sender, cmd, label, new String[0]);
-
-            case "reload":
-                if (!sender.hasPermission("arcanite.admin")) {
-                    sender.sendMessage(MessageManager.get("error.noPermission"));
-                    break;
-                }
-                ConfigManager.reloadConfig();
-                sender.sendMessage(MessageManager.get("success.reload"));
-                break;
-
+                
             case "stats":
-                if (!sender.hasPermission("arcanite.admin")) {
-                    sender.sendMessage(MessageManager.get("error.noPermission"));
-                    break;
-                }
                 showStats(sender);
                 break;
-
-            case "health":
-                if (!sender.hasPermission("arcanite.admin")) {
-                    sender.sendMessage(MessageManager.get("error.noPermission"));
-                    break;
-                }
-                showHealth(sender);
-                break;
                 
-            case "crafting":
-                if (!(sender instanceof Player)) {
-                    sender.sendMessage(MessageManager.get("error.playersOnly"));
-                    break;
-                }
-                dev.lsdmc.arcaniteCrystals.manager.CrystalCraftingManager.showCraftingGuide((Player) sender);
+            case "health":
+                showHealth(sender);
                 break;
                 
             case "admin":
                 if (!sender.hasPermission("arcanite.admin")) {
-                    sender.sendMessage(MessageManager.get("error.noPermission"));
-                    break;
+                    sender.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
+                    return true;
                 }
-                return handleAdminCommand(sender, Arrays.copyOfRange(args, 1, args.length));
-
+                if (args.length < 2) {
+                    sendAdminHelp(sender);
+                    return true;
+                }
+                handleAdminCommand(sender, Arrays.copyOfRange(args, 1, args.length));
+                break;
+                
+            case "crafting":
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage(ChatColor.RED + "This command can only be used by players!");
+                    return true;
+                }
+                Player playerCrafting = (Player) sender;
+                if (!playerCrafting.hasPermission("arcanite.crafting")) {
+                    playerCrafting.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
+                    return true;
+                }
+                new CraftingMenu(playerCrafting).open();
+                break;
+                
+            case "give":
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage(ChatColor.RED + "This command can only be used by players!");
+                    return true;
+                }
+                Player playerGive = (Player) sender;
+                if (!playerGive.hasPermission("arcanite.give")) {
+                    playerGive.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
+                    return true;
+                }
+                if (args.length < 2) {
+                    playerGive.sendMessage(ChatColor.RED + "Usage: /arcanite give <player>");
+                    return true;
+                }
+                Player target = Bukkit.getPlayer(args[1]);
+                if (target == null) {
+                    playerGive.sendMessage(ChatColor.RED + "Player not found!");
+                    return true;
+                }
+                CrystalManager.giveNewCrystal(target);
+                playerGive.sendMessage(ChatColor.GREEN + "Gave a crystal to " + target.getName());
+                break;
+                
+            case "mystery":
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage(ChatColor.RED + "This command can only be used by players!");
+                    return true;
+                }
+                if (!sender.hasPermission("arcanite.mystery")) {
+                    sender.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
+                    return true;
+                }
+                Player player = (Player) sender;
+                ItemStack mysteryCrystal = CrystalManager.createMysteryCrystal();
+                player.getInventory().addItem(mysteryCrystal);
+                player.sendMessage(ChatColor.GREEN + "You received a mystery crystal!");
+                break;
+                
             default:
-                if (sender instanceof Player) {
-                    sendHelp((Player) sender);
-                } else {
-                    sendConsoleHelp(sender);
-                }
+                sender.sendMessage(ChatColor.RED + "Unknown subcommand. Use /arcanite help for help.");
                 break;
         }
-
+        
         return true;
     }
 

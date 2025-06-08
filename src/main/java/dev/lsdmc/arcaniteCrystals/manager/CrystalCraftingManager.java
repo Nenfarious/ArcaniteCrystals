@@ -18,6 +18,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.ShapelessRecipe;
+import org.bukkit.inventory.RecipeChoice;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -38,17 +41,17 @@ public class CrystalCraftingManager implements Listener {
     
     // Crafting experience rewards
     private static final Map<CrystalTier, Integer> EXPERIENCE_REWARDS = Map.of(
-        CrystalTier.BASIC, 50,
-        CrystalTier.RARE, 150,
-        CrystalTier.LEGENDARY, 500
+        CrystalTier.APPRENTICE, 50,
+        CrystalTier.ADEPT, 150,
+        CrystalTier.MASTERWORK, 500
     );
 
     static {
         Map<CrystalTier, CrystalRecipe> recipeMap = new HashMap<>();
         
         // Tier 1: Basic Crystal - Early game accessible
-        recipeMap.put(CrystalTier.BASIC, new CrystalRecipe(
-            CrystalTier.BASIC,
+        recipeMap.put(CrystalTier.APPRENTICE, new CrystalRecipe(
+            CrystalTier.APPRENTICE,
             createBasicRecipeMaterials(),
             "✦ Basic Arcanite Crystal ✦",
             createBasicCrystalLore(),
@@ -58,8 +61,8 @@ public class CrystalCraftingManager implements Listener {
         ));
 
         // Tier 2: Rare Crystal - Mid-game challenge
-        recipeMap.put(CrystalTier.RARE, new CrystalRecipe(
-            CrystalTier.RARE,
+        recipeMap.put(CrystalTier.ADEPT, new CrystalRecipe(
+            CrystalTier.ADEPT,
             createRareRecipeMaterials(),
             "◆ Rare Arcanite Crystal ◆",
             createRareCrystalLore(),
@@ -69,8 +72,8 @@ public class CrystalCraftingManager implements Listener {
         ));
 
         // Tier 3: Legendary Crystal - End-game ultimate
-        recipeMap.put(CrystalTier.LEGENDARY, new CrystalRecipe(
-            CrystalTier.LEGENDARY,
+        recipeMap.put(CrystalTier.MASTERWORK, new CrystalRecipe(
+            CrystalTier.MASTERWORK,
             createLegendaryRecipeMaterials(),
             "❖ Legendary Arcanite Crystal ❖",
             createLegendaryCrystalLore(),
@@ -80,6 +83,150 @@ public class CrystalCraftingManager implements Listener {
         ));
         
         CRYSTAL_RECIPES = Collections.unmodifiableMap(recipeMap);
+    }
+
+    private static final Map<String, ShapedRecipe> shapedRecipes = new HashMap<>();
+    private static final Map<String, ShapelessRecipe> shapelessRecipes = new HashMap<>();
+    
+    /**
+     * Registers all crystal crafting recipes.
+     */
+    public static void registerRecipes() {
+        registerBlankCrystalRecipe();
+        registerCrystalUpgradeRecipes();
+        registerCrystalCombinationRecipes();
+    }
+    
+    /**
+     * Registers the recipe for crafting a blank crystal.
+     */
+    private static void registerBlankCrystalRecipe() {
+        NamespacedKey key = new NamespacedKey(ArcaniteCrystals.getInstance(), "blank_crystal");
+        ShapedRecipe recipe = new ShapedRecipe(key, CrystalManager.createBlankCrystal());
+        
+        recipe.shape("DND", "NEN", "DND");
+        recipe.setIngredient('D', Material.DIAMOND);
+        recipe.setIngredient('N', Material.NETHERITE_INGOT);
+        recipe.setIngredient('E', Material.END_CRYSTAL);
+        
+        ArcaniteCrystals.getInstance().getServer().addRecipe(recipe);
+        shapedRecipes.put("blank_crystal", recipe);
+    }
+    
+    /**
+     * Registers recipes for upgrading crystals.
+     */
+    private static void registerCrystalUpgradeRecipes() {
+        // Tier 1 to Tier 2
+        registerCrystalUpgradeRecipe("tier1_to_tier2", 1, 2, 
+            Material.NETHERITE_INGOT, Material.DIAMOND_BLOCK);
+            
+        // Tier 2 to Tier 3
+        registerCrystalUpgradeRecipe("tier2_to_tier3", 2, 3,
+            Material.NETHERITE_BLOCK, Material.END_CRYSTAL);
+            
+        // Tier 3 to Tier 4
+        registerCrystalUpgradeRecipe("tier3_to_tier4", 3, 4,
+            Material.NETHERITE_BLOCK, Material.DRAGON_EGG);
+    }
+    
+    /**
+     * Registers a specific crystal upgrade recipe.
+     */
+    private static void registerCrystalUpgradeRecipe(String name, int fromTier, int toTier, 
+            Material... materials) {
+        NamespacedKey key = new NamespacedKey(ArcaniteCrystals.getInstance(), name);
+        ShapelessRecipe recipe = new ShapelessRecipe(key, 
+            CrystalManager.createBlankCrystal());
+            
+        // Add the base crystal
+        recipe.addIngredient(new RecipeChoice.ExactChoice(
+            CrystalManager.createBlankCrystal()));
+            
+        // Add upgrade materials
+        for (Material material : materials) {
+            recipe.addIngredient(material);
+        }
+        
+        ArcaniteCrystals.getInstance().getServer().addRecipe(recipe);
+        shapelessRecipes.put(name, recipe);
+    }
+    
+    /**
+     * Registers recipes for combining crystals.
+     */
+    private static void registerCrystalCombinationRecipes() {
+        // Combine two Tier 1 crystals
+        registerCrystalCombinationRecipe("combine_tier1", 1, 1, 2);
+        
+        // Combine two Tier 2 crystals
+        registerCrystalCombinationRecipe("combine_tier2", 2, 2, 3);
+        
+        // Combine two Tier 3 crystals
+        registerCrystalCombinationRecipe("combine_tier3", 3, 3, 4);
+    }
+    
+    /**
+     * Registers a specific crystal combination recipe.
+     */
+    private static void registerCrystalCombinationRecipe(String name, int tier, int count, int resultTier) {
+        NamespacedKey key = new NamespacedKey(ArcaniteCrystals.getInstance(), name);
+        ShapelessRecipe recipe = new ShapelessRecipe(key, 
+            CrystalManager.createBlankCrystal());
+            
+        // Add the crystals to combine
+        ItemStack crystal = CrystalManager.createBlankCrystal();
+        for (int i = 0; i < count; i++) {
+            recipe.addIngredient(new RecipeChoice.ExactChoice(crystal));
+        }
+        
+        ArcaniteCrystals.getInstance().getServer().addRecipe(recipe);
+        shapelessRecipes.put(name, recipe);
+    }
+    
+    /**
+     * Unregisters all crystal crafting recipes.
+     */
+    public static void unregisterRecipes() {
+        for (ShapedRecipe recipe : shapedRecipes.values()) {
+            ArcaniteCrystals.getInstance().getServer().removeRecipe(recipe.getKey());
+        }
+        for (ShapelessRecipe recipe : shapelessRecipes.values()) {
+            ArcaniteCrystals.getInstance().getServer().removeRecipe(recipe.getKey());
+        }
+        shapedRecipes.clear();
+        shapelessRecipes.clear();
+    }
+    
+    /**
+     * Checks if a player has the required materials for a recipe.
+     */
+    public static boolean hasRequiredMaterials(Player player, ItemStack[] recipe) {
+        Map<Material, Integer> required = new HashMap<>();
+        Map<Material, Integer> available = new HashMap<>();
+        
+        // Count required materials
+        for (ItemStack item : recipe) {
+            if (item != null) {
+                required.merge(item.getType(), 1, Integer::sum);
+            }
+        }
+        
+        // Count available materials
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null) {
+                available.merge(item.getType(), item.getAmount(), Integer::sum);
+            }
+        }
+        
+        // Check if player has all required materials
+        for (Map.Entry<Material, Integer> entry : required.entrySet()) {
+            if (available.getOrDefault(entry.getKey(), 0) < entry.getValue()) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     /**
@@ -192,9 +339,9 @@ public class CrystalCraftingManager implements Listener {
         
         // Return partial materials based on tier
         double returnRate = switch (recipe.tier) {
-            case BASIC -> 0.7; // 70% return rate
-            case RARE -> 0.6; // 60% return rate  
-            case LEGENDARY -> 0.5; // 50% return rate
+            case APPRENTICE -> 0.7; // 70% return rate
+            case ADEPT -> 0.6; // 60% return rate  
+            case MASTERWORK -> 0.5; // 50% return rate
         };
         
         returnPartialMaterials(player, recipe, returnRate);
@@ -230,7 +377,7 @@ public class CrystalCraftingManager implements Listener {
         }
         
         // Check each recipe for a match (prioritize higher tiers first)
-        List<CrystalTier> tierOrder = Arrays.asList(CrystalTier.LEGENDARY, CrystalTier.RARE, CrystalTier.BASIC);
+        List<CrystalTier> tierOrder = Arrays.asList(CrystalTier.MASTERWORK, CrystalTier.ADEPT, CrystalTier.APPRENTICE);
         
         for (CrystalTier tier : tierOrder) {
             CrystalRecipe recipe = CRYSTAL_RECIPES.get(tier);
@@ -413,9 +560,9 @@ public class CrystalCraftingManager implements Listener {
         
         // Select random effects based on tier
         int effectCount = switch (recipe.tier) {
-            case BASIC -> 1 + ThreadLocalRandom.current().nextInt(2); // 1-2 effects
-            case RARE -> 2 + ThreadLocalRandom.current().nextInt(2); // 2-3 effects
-            case LEGENDARY -> 3 + ThreadLocalRandom.current().nextInt(2); // 3-4 effects
+            case APPRENTICE -> 1 + ThreadLocalRandom.current().nextInt(2); // 1-2 effects
+            case ADEPT -> 2 + ThreadLocalRandom.current().nextInt(2); // 2-3 effects
+            case MASTERWORK -> 3 + ThreadLocalRandom.current().nextInt(2); // 3-4 effects
         };
         
         Collections.shuffle(availableEffects);
@@ -429,9 +576,9 @@ public class CrystalCraftingManager implements Listener {
      */
     private Material getCrystalMaterial(CrystalTier tier) {
         return switch (tier) {
-            case BASIC -> Material.DIAMOND;
-            case RARE -> Material.EMERALD;
-            case LEGENDARY -> Material.NETHERITE_INGOT;
+            case APPRENTICE -> Material.DIAMOND;
+            case ADEPT -> Material.EMERALD;
+            case MASTERWORK -> Material.NETHERITE_INGOT;
         };
     }
 
@@ -590,17 +737,18 @@ public class CrystalCraftingManager implements Listener {
     // Lore creation methods
     private static List<String> createBasicCrystalLore() {
         return Arrays.asList(
-            ChatColor.GRAY + "(Crafted Crystal)",
-            ChatColor.BLUE + "⚡ Contains mystical energy",
+            ChatColor.GRAY + "(Crafted Apprentice Crystal)",
+            ChatColor.BLUE + "⚡ Humming with basic energy",
             ChatColor.YELLOW + "Right-click to activate",
-            ChatColor.DARK_PURPLE + "✨ Basic tier enchantments ✨"
+            ChatColor.LIGHT_PURPLE + "✨ Basic tier enchantments ✨",
+            ChatColor.DARK_GRAY + "A beginner's first crystal"
         );
     }
     
     private static List<String> createRareCrystalLore() {
         return Arrays.asList(
-            ChatColor.GRAY + "(Crafted Rare Crystal)",
-            ChatColor.DARK_PURPLE + "⚡ Pulsing with rare energy",
+            ChatColor.GRAY + "(Crafted Adept Crystal)",
+            ChatColor.DARK_PURPLE + "⚡ Pulsing with adept energy",
             ChatColor.GOLD + "Right-click to activate",
             ChatColor.LIGHT_PURPLE + "✨ Enhanced tier enchantments ✨",
             ChatColor.DARK_GRAY + "Forged from otherworldly materials"
@@ -609,8 +757,8 @@ public class CrystalCraftingManager implements Listener {
     
     private static List<String> createLegendaryCrystalLore() {
         return Arrays.asList(
-            ChatColor.GRAY + "(Crafted Legendary Crystal)",
-            ChatColor.GOLD + "⚡ Radiating legendary power",
+            ChatColor.GRAY + "(Crafted Masterwork Crystal)",
+            ChatColor.GOLD + "⚡ Radiating masterwork power",
             ChatColor.AQUA + "Right-click to activate",
             ChatColor.LIGHT_PURPLE + "✨ Maximum tier enchantments ✨",
             ChatColor.RED + "★ Forged from legendary artifacts ★",
@@ -622,7 +770,20 @@ public class CrystalCraftingManager implements Listener {
      * Crystal tier enumeration.
      */
     public enum CrystalTier {
-        BASIC, RARE, LEGENDARY
+        APPRENTICE("Apprentice Crystal", 1),
+        ADEPT("Adept Crystal", 2),
+        MASTERWORK("Masterwork Crystal", 3);
+        
+        private final String displayName;
+        private final int tier;
+        
+        CrystalTier(String displayName, int tier) {
+            this.displayName = displayName;
+            this.tier = tier;
+        }
+        
+        public String getDisplayName() { return displayName; }
+        public int getTier() { return tier; }
     }
 
     /**

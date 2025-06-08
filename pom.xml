@@ -1,0 +1,180 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>dev.lsdmc</groupId>
+    <artifactId>arcanite-crystals</artifactId>
+    <version>2</version>
+    <packaging>jar</packaging>
+
+    <name>ArcaniteCrystals</name>
+    <description>
+        Mystery crystals, upgrade GUI, rank-up system, cooldown persistence and more
+    </description>
+
+    <!-- ─────────────────── Properties ─────────────────── -->
+    <properties>
+        <java.version>21</java.version>
+
+        <!-- Bukkit / Spigot -->
+        <spigot.api.version>1.21.4-R0.1-SNAPSHOT</spigot.api.version>
+
+        <!-- Kyori Adventure -->
+        <adventure.version>4.11.0</adventure.version>
+
+        <!-- Vault & Commons -->
+        <vault.version>1.7</vault.version>
+        <commons-lang.version>2.6</commons-lang.version>
+        <commons-lang3.version>3.14.0</commons-lang3.version>
+
+        <!-- PlaceholderAPI -->
+        <placeholderapi.version>2.11.6</placeholderapi.version>
+    </properties>
+
+    <!-- ─────────────────── Repositories ─────────────────── -->
+    <repositories>
+        <!-- Spigot snapshots -->
+        <repository>
+            <id>spigot-repo</id>
+            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+        </repository>
+
+        <!-- Paper / community libs & Vault -->
+        <repository>
+            <id>papermc-public</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+
+        <!-- PlaceholderAPI -->
+        <repository>
+            <id>placeholderapi</id>
+            <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
+        </repository>
+
+        <!-- Fallback for GitHub-published artifacts -->
+        <repository>
+            <id>jitpack</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
+    <!-- ─────────────────── Dependencies ─────────────────── -->
+    <dependencies>
+        <!-- Bukkit / Spigot API (provided by the server at runtime) -->
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>${spigot.api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Vault API (economy & permissions) -->
+        <dependency>
+            <groupId>com.github.milkbowl</groupId>
+            <artifactId>VaultAPI</artifactId>
+            <version>${vault.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- PlaceholderAPI for our expansion -->
+        <dependency>
+            <groupId>me.clip</groupId>
+            <artifactId>placeholderapi</artifactId>
+            <version>${placeholderapi.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Adventure: text-components & Bukkit platform -->
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-platform-bukkit</artifactId>
+            <version>4.3.4</version>
+        </dependency>
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-text-serializer-legacy</artifactId>
+            <version>${adventure.version}</version>
+        </dependency>
+
+        <!-- Apache Commons Lang (v2) for org.apache.commons.lang.StringUtils -->
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>${commons-lang.version}</version>
+        </dependency>
+
+        <!-- Apache Commons Lang3 (if needed for future imports) -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
+        </dependency>
+
+        <!-- Jedis (Redis Java client) -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>5.2.0</version>
+        </dependency> <!-- :contentReference[oaicite:0]{index=0} -->
+
+        <!-- SQLite JDBC for database persistence (optional; can be removed if fully on Redis) -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.41.2.2</version>
+        </dependency>
+
+        <!-- HikariCP -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>5.0.1</version>
+        </dependency>
+    </dependencies>
+
+    <!-- ─────────────────── Build / Shade ─────────────────── -->
+    <build>
+        <plugins>
+            <!-- Java 21 compiler -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.10.1</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+
+            <!-- Shade: bundle dependencies (except provided) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
