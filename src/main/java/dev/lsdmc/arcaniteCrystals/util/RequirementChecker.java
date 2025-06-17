@@ -2,7 +2,7 @@
 package dev.lsdmc.arcaniteCrystals.util;
 
 import dev.lsdmc.arcaniteCrystals.ArcaniteCrystals;
-import dev.lsdmc.arcaniteCrystals.manager.LevelManager.LevelConfig;
+import dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
@@ -10,19 +10,18 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
- * Checks a player's progress against level requirements.
+ * Checks a player's progress against level requirements using ServerLevelManager.
  */
 public class RequirementChecker {
 
     private final Player player;
-    private final LevelConfig config;
     private final Economy econ;
 
-    public RequirementChecker(Player player, LevelConfig config) {
+    public RequirementChecker(Player player) {
         this.player = player;
-        this.config = config;
         RegisteredServiceProvider<Economy> rsp = ArcaniteCrystals.getInstance()
                 .getServer().getServicesManager()
                 .getRegistration(Economy.class);
@@ -30,35 +29,76 @@ public class RequirementChecker {
     }
 
     /**
-     * Returns a list of human-readable reasons why the player cannot level up.
+     * Returns a list of human-readable reasons why the player cannot level up to the next level.
      */
-    public List<String> getMissing() {
+    public List<String> getMissingForNextLevel() {
+        UUID playerId = player.getUniqueId();
+        return ServerLevelManager.getMissingRequirementsForNextLevel(playerId);
+    }
+
+    /**
+     * Returns a list of human-readable reasons why the player cannot reach a specific level.
+     */
+    public List<String> getMissingForLevel(int targetLevel) {
+        ServerLevelManager.LevelConfiguration config = ServerLevelManager.getLevelConfiguration(targetLevel);
+        if (config == null) {
+            return List.of("Invalid level: " + targetLevel);
+        }
+
+        return checkRequirements(config.getRequirements());
+    }
+
+    /**
+     * Checks if player can level up to the next level.
+     */
+    public boolean canLevelUp() {
+        return ServerLevelManager.canPlayerLevelUp(player.getUniqueId());
+    }
+
+    /**
+     * Checks requirements against a requirement set.
+     */
+    private List<String> checkRequirements(ServerLevelManager.RequirementSet requirements) {
         List<String> missing = new ArrayList<>();
 
         // Money requirement
-        int moneyReq = config.getMoneyRequirement();
-        if (moneyReq > 0) {
+        if (requirements.getMoney() > 0) {
             if (econ == null) {
-                missing.add("No economy provider available");
-            } else if (!econ.has(player, moneyReq)) {
-                missing.add("Balance of at least $" + moneyReq + " required");
+                missing.add("Economy system not available");
+            } else if (!econ.has(player, requirements.getMoney())) {
+                missing.add(String.format("$%.2f required", requirements.getMoney()));
             }
         }
 
         // Player kills requirement
-        int killsReq = config.getKillsRequirement();
-        if (killsReq > 0 && player.getStatistic(Statistic.PLAYER_KILLS) < killsReq) {
-            missing.add(killsReq + " player kills required");
+        if (requirements.getPlayerKills() > 0) {
+            int currentKills = player.getStatistic(Statistic.PLAYER_KILLS);
+            if (currentKills < requirements.getPlayerKills()) {
+                missing.add(String.format("%d player kills required", requirements.getPlayerKills()));
+            }
         }
 
-        // Playtime requirement (in hours)
-        long timeMsReq = config.getTimeRequirementMs();
-        if (timeMsReq > 0) {
-            long ticks = player.getStatistic(Statistic.PLAY_ONE_MINUTE);
-            long msPlayed = ticks * 50L;
-            if (msPlayed < timeMsReq) {
-                long hoursReq = timeMsReq / 3_600_000L;
-                missing.add(hoursReq + " hours of playtime required");
+        // Mob kills requirement
+        if (requirements.getMobKills() > 0) {
+            int currentKills = player.getStatistic(Statistic.MOB_KILLS);
+            if (currentKills < requirements.getMobKills()) {
+                missing.add(String.format("%d mob kills required", requirements.getMobKills()));
+            }
+        }
+
+        // Playtime requirement
+        if (requirements.getPlaytimeHours() > 0) {
+            long currentTicks = player.getStatistic(Statistic.PLAY_ONE_MINUTE);
+            long currentHours = (currentTicks * 50L) / 3_600_000L; // Convert ticks to hours
+            if (currentHours < requirements.getPlaytimeHours()) {
+                missing.add(String.format("%d hours playtime required", requirements.getPlaytimeHours()));
+            }
+        }
+
+        // Experience requirement
+        if (requirements.getExperience() > 0) {
+            if (player.getTotalExperience() < requirements.getExperience()) {
+                missing.add(String.format("%d experience required", requirements.getExperience()));
             }
         }
 

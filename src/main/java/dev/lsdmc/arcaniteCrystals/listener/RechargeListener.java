@@ -46,7 +46,9 @@ public class RechargeListener implements Listener {
         event.setCancelled(true);
         
         // Attempt to recharge the crystal
-        if (CrystalManager.rechargeCrystal(player, crystalToRecharge, item)) {
+        if (item.getAmount() > 0) {
+            item.setAmount(item.getAmount() - 1); // Consume the recharge material
+            CrystalManager.rechargeCrystal(player);
             player.sendMessage(ChatColor.GREEN + "Crystal recharged successfully!");
         }
     }

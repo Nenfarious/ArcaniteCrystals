@@ -3,7 +3,7 @@ package dev.lsdmc.arcaniteCrystals.listener;
 
 import dev.lsdmc.arcaniteCrystals.ArcaniteCrystals;
 import dev.lsdmc.arcaniteCrystals.manager.CrystalManager;
-import dev.lsdmc.arcaniteCrystals.manager.LevelManager;
+import dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager;
 import dev.lsdmc.arcaniteCrystals.manager.EffectApplierManager;
 import dev.lsdmc.arcaniteCrystals.database.PlayerDataManager;
 import dev.lsdmc.arcaniteCrystals.util.MessageManager;
@@ -65,7 +65,7 @@ public class PlayerJoinListener implements Listener {
             
             // Apply level buffs based on current player level
             if (playerLevel > 1) {
-                LevelManager.applyBuffs(player, playerLevel);
+                dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.applyBuffs(player, playerLevel);
                 plugin.getLogger().fine("Applied level " + playerLevel + " buffs to " + player.getName());
             }
             
@@ -114,7 +114,7 @@ public class PlayerJoinListener implements Listener {
         }
         
         // Validate level configuration exists
-        if (!LevelManager.isValidLevel(currentLevel)) {
+                    if (!dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.isValidLevel(currentLevel)) {
             plugin.getLogger().warning("Player " + player.getName() + " had level " + currentLevel + " but no config exists, resetting to 1");
             currentLevel = 1;
             PlayerDataManager.setLevel(playerId, currentLevel);

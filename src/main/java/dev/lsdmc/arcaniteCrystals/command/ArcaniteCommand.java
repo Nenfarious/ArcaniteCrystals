@@ -5,6 +5,8 @@ import dev.lsdmc.arcaniteCrystals.config.ConfigManager;
 import dev.lsdmc.arcaniteCrystals.menu.TalentMenu;
 import dev.lsdmc.arcaniteCrystals.util.MessageManager;
 import dev.lsdmc.arcaniteCrystals.manager.CrystalManager;
+import dev.lsdmc.arcaniteCrystals.manager.CrystalRecipeManager;
+import dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager;
 import dev.lsdmc.arcaniteCrystals.menu.CraftingMenu;
 import dev.lsdmc.arcaniteCrystals.menu.ArcaniteMainMenu;
 import org.bukkit.Bukkit;
@@ -16,6 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.ChatColor;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -25,9 +28,25 @@ import java.util.stream.Collectors;
 
 public class ArcaniteCommand implements CommandExecutor, TabCompleter {
 
-    private static final List<String> SUBS = Arrays.asList(
-            "help", "info", "talents", "give", "mystery", "reload", "stats", "health", "admin", "crafting",
-            "setlevel", "grant", "revoke", "view", "cooldown", "energy", "maintenance"
+    // Define available subcommands with proper organization
+    private static final List<String> BASIC_COMMANDS = Arrays.asList(
+            "help", "talents", "mystery", "stats", "health", "levels", "levelinfo"
+    );
+    
+    private static final List<String> ADMIN_COMMANDS = Arrays.asList(
+            "give", "reload", "admin", "catalyst"
+    );
+    
+    private static final List<String> ADMIN_SUBCOMMANDS = Arrays.asList(
+            "setlevel", "grant", "revoke", "view", "resetcooldown", "resetenergy", "maintenance"
+    );
+    
+    private static final List<String> CATALYST_SUBCOMMANDS = Arrays.asList(
+            "give", "types"
+    );
+    
+    private static final List<String> CATALYST_TYPES = Arrays.asList(
+            "identification", "socketing", "fusion"
     );
 
     @Override
@@ -70,6 +89,31 @@ public class ArcaniteCommand implements CommandExecutor, TabCompleter {
                 
             case "health":
                 showHealth(sender);
+                break;
+                
+            case "levels":
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage(ChatColor.RED + "This command can only be used by players!");
+                    return true;
+                }
+                showAllLevels((Player) sender);
+                break;
+                
+            case "levelinfo":
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage(ChatColor.RED + "This command can only be used by players!");
+                    return true;
+                }
+                if (args.length >= 2) {
+                    try {
+                        int level = Integer.parseInt(args[1]);
+                        showLevelInfo((Player) sender, level);
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage(ChatColor.RED + "Invalid level number: " + args[1]);
+                    }
+                } else {
+                    showCurrentLevelInfo((Player) sender);
+                }
                 break;
                 
             case "admin":
@@ -135,6 +179,27 @@ public class ArcaniteCommand implements CommandExecutor, TabCompleter {
                 player.sendMessage(ChatColor.GREEN + "You received a mystery crystal!");
                 break;
                 
+            case "reload":
+                if (!sender.hasPermission("arcanite.admin")) {
+                    sender.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
+                    return true;
+                }
+                try {
+                    ConfigManager.reloadConfig();
+                    sender.sendMessage(ChatColor.GREEN + "Configuration reloaded successfully!");
+                } catch (Exception e) {
+                    sender.sendMessage(ChatColor.RED + "Error reloading configuration: " + e.getMessage());
+                }
+                break;
+                
+            case "catalyst":
+                if (!sender.hasPermission("arcanite.admin")) {
+                    sender.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
+                    return true;
+                }
+                handleCatalystCommand(sender, args);
+                break;
+                
             default:
                 sender.sendMessage(ChatColor.RED + "Unknown subcommand. Use /arcanite help for help.");
                 break;
@@ -146,18 +211,20 @@ public class ArcaniteCommand implements CommandExecutor, TabCompleter {
     private void sendHelp(Player p) {
         p.sendMessage("§6§l=== ArcaniteCrystals Help ===");
         p.sendMessage("§e/arcanite talents §7- Open the Crystal Upgrades menu");
-        p.sendMessage("§e/arcanite crafting §7- View crystal crafting recipes");
-        p.sendMessage("§e/arcanite give <player> §7- Give a blank crystal to a player");
         p.sendMessage("§e/arcanite mystery §7- Get a mystery crystal with random effects");
-        p.sendMessage("§e/arcanite info §7- Show plugin information");
+        p.sendMessage("§e/arcanite levels §7- View all server levels and progression");
+        p.sendMessage("§e/arcanite levelinfo §7- View your current level details");
+        p.sendMessage("§e/arcanite levelinfo <#> §7- View details for a specific level");
+        p.sendMessage("§e/arcanite stats §7- View system statistics");
+        p.sendMessage("§e/arcanite health §7- Check system health");
         p.sendMessage("§e/levelup §7- Level up if you meet the requirements");
         
         if (p.hasPermission("arcanite.admin")) {
             p.sendMessage("§c§l=== Admin Commands ===");
+            p.sendMessage("§c/arcanite give <player> §7- Give a blank crystal to a player");
             p.sendMessage("§c/arcanite reload §7- Reload configuration");
-            p.sendMessage("§c/arcanite stats §7- View performance statistics");
-            p.sendMessage("§c/arcanite health §7- Check system health");
             p.sendMessage("§c/arcanite admin §7- Access admin tools");
+            p.sendMessage("§c/arcanite catalyst §7- Manage catalysts");
         }
         
         p.sendMessage("§6§l================================");
@@ -166,11 +233,13 @@ public class ArcaniteCommand implements CommandExecutor, TabCompleter {
     private void sendConsoleHelp(CommandSender sender) {
         sender.sendMessage("=== ArcaniteCrystals Console Commands ===");
         sender.sendMessage("/arcanite give <player> - Give a blank crystal to a player");
-        sender.sendMessage("/arcanite crafting - View crystal crafting recipes");
+        sender.sendMessage("/arcanite mystery - Get a mystery crystal with random effects");
         sender.sendMessage("/arcanite reload - Reload configuration");
         sender.sendMessage("/arcanite stats - View performance statistics");
         sender.sendMessage("/arcanite health - Check system health");
         sender.sendMessage("/arcanite admin - Access admin tools");
+        sender.sendMessage("/arcanite catalyst - Manage catalysts");
+        sender.sendMessage("Note: Level commands require a player context");
         sender.sendMessage("=========================================");
     }
 
@@ -265,7 +334,7 @@ public class ArcaniteCommand implements CommandExecutor, TabCompleter {
             }
             
             dev.lsdmc.arcaniteCrystals.database.PlayerDataManager.setLevel(target.getUniqueId(), level);
-            dev.lsdmc.arcaniteCrystals.manager.LevelManager.applyBuffs(target, level);
+            dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.applyBuffs(target, level);
             
             String message = MessageManager.getMessage("success.setLevel", 
                 Map.of("player", target.getName(), "level", String.valueOf(level)));
@@ -273,7 +342,7 @@ public class ArcaniteCommand implements CommandExecutor, TabCompleter {
             
             // Notify target player
             MessageManager.sendLevelUp(target, level, 
-                dev.lsdmc.arcaniteCrystals.manager.LevelManager.getConfigForLevel(level) != null ? "Level " + level : "Level " + level);
+                dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getLevelConfiguration(level) != null ? "Level " + level : "Level " + level);
                 
         } catch (NumberFormatException e) {
             sender.sendMessage(MessageManager.get("error.invalidNumber"));
@@ -349,8 +418,8 @@ public class ArcaniteCommand implements CommandExecutor, TabCompleter {
         
         UUID playerId = target.getUniqueId();
         int level = dev.lsdmc.arcaniteCrystals.database.PlayerDataManager.getLevel(playerId);
-        int maxTier = dev.lsdmc.arcaniteCrystals.manager.LevelManager.getMaxTier(playerId);
-        int slots = dev.lsdmc.arcaniteCrystals.manager.LevelManager.getSlots(playerId);
+        int maxTier = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getMaxTier(playerId);
+        int slots = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getSlots(playerId);
         Set<String> upgrades = dev.lsdmc.arcaniteCrystals.database.PlayerDataManager.getUnlockedUpgrades(playerId);
         
         sender.sendMessage("§6=== Player Info: " + target.getName() + " ===");
@@ -455,17 +524,343 @@ public class ArcaniteCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§e/arcanite admin resetcooldown <player> §8- Reset crystal cooldown");
         sender.sendMessage("§e/arcanite admin resetenergy <player> §8- Reset crystal energy");
         sender.sendMessage("§e/arcanite admin maintenance <save|backup|cleanup> §8- Maintenance tools");
+        sender.sendMessage("§e/arcanite catalyst give <player> <type> §8- Give catalyst to player");
+        sender.sendMessage("§e/arcanite catalyst types §8- List available catalyst types");
         sender.sendMessage("§6=====================================");
+    }
+
+    /**
+     * Handles catalyst-related admin commands.
+     */
+    private void handleCatalystCommand(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§c§lCatalyst Commands:");
+            sender.sendMessage("§e/arcanite catalyst give <player> <type> §8- Give catalyst to player");
+            sender.sendMessage("§e/arcanite catalyst types §8- List available catalyst types");
+            sender.sendMessage("§7Types: identification, socketing, fusion");
+            return;
+        }
+        
+        String subCommand = args[1].toLowerCase();
+        
+        switch (subCommand) {
+            case "give":
+                if (args.length != 4) {
+                    sender.sendMessage("§cUsage: /arcanite catalyst give <player> <type>");
+                    sender.sendMessage("§7Types: identification, socketing, fusion");
+                    return;
+                }
+                
+                Player target = Bukkit.getPlayer(args[2]);
+                if (target == null) {
+                    sender.sendMessage(ChatColor.RED + "Player not found!");
+                    return;
+                }
+                
+                String catalystType = args[3].toLowerCase();
+                ItemStack catalyst = null;
+                
+                switch (catalystType) {
+                    case "identification":
+                        catalyst = CrystalRecipeManager.createIdentificationCatalyst();
+                        break;
+                    case "socketing":
+                        catalyst = CrystalRecipeManager.createSocketingCatalyst();
+                        break;
+                    case "fusion":
+                        catalyst = CrystalRecipeManager.createFusionCatalyst();
+                        break;
+                    default:
+                        sender.sendMessage("§cInvalid catalyst type! Use: identification, socketing, fusion");
+                        return;
+                }
+                
+                // Give catalyst to player
+                if (target.getInventory().firstEmpty() == -1) {
+                    target.getWorld().dropItemNaturally(target.getLocation(), catalyst);
+                    target.sendMessage("§6Your inventory was full, so the catalyst was dropped at your feet!");
+                } else {
+                    target.getInventory().addItem(catalyst);
+                }
+                
+                sender.sendMessage("§aGave " + catalystType + " catalyst to " + target.getName());
+                target.sendMessage("§aYou received a " + catalystType + " catalyst from " + sender.getName() + "!");
+                break;
+                
+            case "types":
+                sender.sendMessage("§6§lAvailable Catalyst Types:");
+                sender.sendMessage("§e• identification §7- Reveals crystal properties");
+                sender.sendMessage("§e• socketing §7- Embeds crystals into items");
+                sender.sendMessage("§e• fusion §7- Combines two crystals");
+                break;
+                
+            default:
+                sender.sendMessage("§cUnknown catalyst command. Use: give, types");
+                break;
+        }
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
+        List<String> completions = new ArrayList<>();
+        
         if (args.length == 1) {
             String part = args[0].toLowerCase();
-            return SUBS.stream()
+            
+            // Add basic commands for all players
+            BASIC_COMMANDS.stream()
                     .filter(sub -> sub.startsWith(part))
-                    .collect(Collectors.toList());
+                    .forEach(completions::add);
+            
+            // Add admin commands if player has permission
+            if (sender.hasPermission("arcanite.admin")) {
+                ADMIN_COMMANDS.stream()
+                        .filter(sub -> sub.startsWith(part))
+                        .forEach(completions::add);
+            }
+            
+            return completions;
         }
-        return List.of();
+        
+        if (args.length == 2) {
+            String command = args[0].toLowerCase();
+            String part = args[1].toLowerCase();
+            
+            switch (command) {
+                case "admin":
+                    if (sender.hasPermission("arcanite.admin")) {
+                        return ADMIN_SUBCOMMANDS.stream()
+                                .filter(sub -> sub.startsWith(part))
+                                .collect(Collectors.toList());
+                    }
+                    break;
+                    
+                case "catalyst":
+                    if (sender.hasPermission("arcanite.admin")) {
+                        return CATALYST_SUBCOMMANDS.stream()
+                                .filter(sub -> sub.startsWith(part))
+                                .collect(Collectors.toList());
+                    }
+                    break;
+                    
+                case "give":
+                    if (sender.hasPermission("arcanite.give")) {
+                        // Return online player names
+                        return Bukkit.getOnlinePlayers().stream()
+                                .map(Player::getName)
+                                .filter(name -> name.toLowerCase().startsWith(part))
+                                .collect(Collectors.toList());
+                    }
+                    break;
+            }
+        }
+        
+        if (args.length == 3) {
+            String command = args[0].toLowerCase();
+            String subCommand = args[1].toLowerCase();
+            String part = args[2].toLowerCase();
+            
+            if ("catalyst".equals(command) && "give".equals(subCommand) && sender.hasPermission("arcanite.admin")) {
+                // Return online player names for catalyst give command
+                return Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .filter(name -> name.toLowerCase().startsWith(part))
+                        .collect(Collectors.toList());
+            }
+            
+            if ("admin".equals(command) && sender.hasPermission("arcanite.admin")) {
+                // Return online player names for admin commands that need players
+                if (Arrays.asList("setlevel", "grant", "revoke", "view", "resetcooldown", "resetenergy").contains(subCommand)) {
+                    return Bukkit.getOnlinePlayers().stream()
+                            .map(Player::getName)
+                            .filter(name -> name.toLowerCase().startsWith(part))
+                            .collect(Collectors.toList());
+                }
+                
+                // Return maintenance types for maintenance command
+                if ("maintenance".equals(subCommand)) {
+                    return Arrays.asList("save", "backup", "cleanup").stream()
+                            .filter(type -> type.startsWith(part))
+                            .collect(Collectors.toList());
+                }
+            }
+        }
+        
+        if (args.length == 4) {
+            String command = args[0].toLowerCase();
+            String subCommand = args[1].toLowerCase();
+            String part = args[3].toLowerCase();
+            
+            if ("catalyst".equals(command) && "give".equals(subCommand) && sender.hasPermission("arcanite.admin")) {
+                // Return catalyst types
+                return CATALYST_TYPES.stream()
+                        .filter(type -> type.startsWith(part))
+                    .collect(Collectors.toList());
+            }
+        }
+        
+        return completions;
+    }
+    
+    /**
+     * Shows an overview of all available levels
+     */
+    private void showAllLevels(Player player) {
+        player.sendMessage(ChatColor.GOLD + "═══════════════════════════════════════");
+        player.sendMessage(ChatColor.GREEN + "      📊 " + ChatColor.BOLD + "SERVER LEVEL PROGRESSION" + ChatColor.RESET + ChatColor.GREEN + " 📊");
+        player.sendMessage(ChatColor.GOLD + "═══════════════════════════════════════");
+        player.sendMessage("");
+        
+        int currentLevel = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getPlayerLevel(player.getUniqueId());
+        int maxLevel = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getMaxLevel();
+        
+        for (int i = 1; i <= maxLevel; i++) {
+            var config = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getLevelConfiguration(i);
+            if (config == null) continue;
+            
+            String status;
+            ChatColor color;
+            if (i < currentLevel) {
+                status = "✓ COMPLETED";
+                color = ChatColor.GREEN;
+            } else if (i == currentLevel) {
+                status = "● CURRENT";
+                color = ChatColor.AQUA;
+            } else {
+                status = "○ LOCKED";
+                color = ChatColor.GRAY;
+            }
+            
+            player.sendMessage(color + "Level " + i + ": " + 
+                ChatColor.translateAlternateColorCodes('&', config.getTag()) + " " +
+                color + config.getDisplayName() + " " + ChatColor.YELLOW + "[" + status + "]");
+        }
+        
+        player.sendMessage("");
+        player.sendMessage(ChatColor.BLUE + "Use " + ChatColor.GOLD + "/arcanite levelinfo <number>" + 
+                         ChatColor.BLUE + " for detailed level information");
+        player.sendMessage(ChatColor.BLUE + "Use " + ChatColor.GOLD + "/levelup" + 
+                         ChatColor.BLUE + " to advance to the next level");
+        player.sendMessage(ChatColor.GOLD + "═══════════════════════════════════════");
+    }
+    
+    /**
+     * Shows detailed information about the player's current level
+     */
+    private void showCurrentLevelInfo(Player player) {
+        int currentLevel = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getPlayerLevel(player.getUniqueId());
+        showLevelInfo(player, currentLevel);
+    }
+    
+    /**
+     * Shows detailed information about a specific level
+     */
+    private void showLevelInfo(Player player, int level) {
+        var config = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getLevelConfiguration(level);
+        if (config == null) {
+            player.sendMessage(ChatColor.RED + "Level " + level + " does not exist!");
+            return;
+        }
+        
+        int currentLevel = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getPlayerLevel(player.getUniqueId());
+        boolean isCurrentLevel = level == currentLevel;
+        boolean isUnlocked = level <= currentLevel;
+        
+        player.sendMessage(ChatColor.GOLD + "═══════════════════════════════════════");
+        player.sendMessage(ChatColor.GREEN + "      " + ChatColor.translateAlternateColorCodes('&', config.getTag()) + 
+                         ChatColor.GREEN + " - " + ChatColor.AQUA + config.getDisplayName());
+        player.sendMessage(ChatColor.GOLD + "═══════════════════════════════════════");
+        player.sendMessage("");
+        
+        if (isCurrentLevel) {
+            player.sendMessage(ChatColor.AQUA + "● THIS IS YOUR CURRENT LEVEL");
+        } else if (isUnlocked) {
+            player.sendMessage(ChatColor.GREEN + "✓ COMPLETED LEVEL");
+        } else {
+            player.sendMessage(ChatColor.YELLOW + "○ LOCKED LEVEL");
+        }
+        
+        if (!config.getDescription().isEmpty()) {
+            player.sendMessage(ChatColor.GRAY + "Description: " + ChatColor.WHITE + config.getDescription());
+        }
+        
+        player.sendMessage("");
+        
+        // Show requirements
+        if (!isUnlocked) {
+            player.sendMessage(ChatColor.YELLOW + "Requirements to unlock:");
+            var requirements = config.getRequirements();
+            
+            if (requirements.getMoney() > 0) {
+                player.sendMessage(ChatColor.GRAY + "  • Money: " + ChatColor.GREEN + 
+                                 String.format("$%.2f", requirements.getMoney()));
+            }
+            if (requirements.getPlayerKills() > 0) {
+                player.sendMessage(ChatColor.GRAY + "  • Player Kills: " + ChatColor.GREEN + 
+                                 requirements.getPlayerKills());
+            }
+            if (requirements.getPlaytimeHours() > 0) {
+                player.sendMessage(ChatColor.GRAY + "  • Playtime: " + ChatColor.GREEN + 
+                                 requirements.getPlaytimeHours() + " hours");
+            }
+            player.sendMessage("");
+        }
+        
+        // Show benefits
+        player.sendMessage(ChatColor.BLUE + "Level Benefits:");
+        if (!config.getBuffs().isEmpty()) {
+            player.sendMessage(ChatColor.YELLOW + "  Permanent Buffs:");
+            for (var buff : config.getBuffs().entrySet()) {
+                String buffName = formatBuffName(buff.getKey());
+                String buffValue = formatBuffValue(buff.getValue());
+                player.sendMessage(ChatColor.GRAY + "    ► " + buffName + ": " + ChatColor.GREEN + "+" + buffValue);
+            }
+        }
+        
+        player.sendMessage(ChatColor.YELLOW + "  Crystal System:");
+        player.sendMessage(ChatColor.GRAY + "    ► Max Effect Tier: " + ChatColor.AQUA + 
+                         dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getMaxTier(player.getUniqueId()));
+        player.sendMessage(ChatColor.GRAY + "    ► Crystal Slots: " + ChatColor.AQUA + 
+                         dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getSlots(player.getUniqueId()));
+        
+        if (!config.getPermissions().isEmpty()) {
+            player.sendMessage(ChatColor.YELLOW + "  Special Permissions:");
+            for (String permission : config.getPermissions()) {
+                player.sendMessage(ChatColor.GRAY + "    ► " + ChatColor.LIGHT_PURPLE + permission);
+            }
+        }
+        
+        player.sendMessage("");
+        
+        if (!isUnlocked && level == currentLevel + 1) {
+            java.util.List<String> missing = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getMissingRequirementsForNextLevel(player.getUniqueId());
+            if (missing.isEmpty()) {
+                player.sendMessage(ChatColor.GREEN + "✓ You can level up! Use " + ChatColor.GOLD + "/levelup");
+            } else {
+                player.sendMessage(ChatColor.RED + "Missing requirements: " + String.join(", ", missing));
+            }
+        } else if (!isUnlocked) {
+            player.sendMessage(ChatColor.GRAY + "Complete previous levels to unlock this one.");
+        }
+        
+        player.sendMessage(ChatColor.GOLD + "═══════════════════════════════════════");
+    }
+    
+    private String formatBuffName(String buffKey) {
+        return switch (buffKey.toLowerCase()) {
+            case "max_health" -> "Max Health";
+            case "movement_speed", "walk_speed" -> "Movement Speed";
+            case "attack_damage" -> "Attack Damage";
+            case "knockback_resistance" -> "Knockback Resistance";
+            default -> buffKey.replace("_", " ");
+        };
+    }
+    
+    private String formatBuffValue(double value) {
+        if (value == (int) value) {
+            return String.valueOf((int) value);
+        } else {
+            return String.format("%.2f", value);
+        }
     }
 }

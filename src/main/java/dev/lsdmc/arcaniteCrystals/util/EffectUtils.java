@@ -4,7 +4,7 @@ package dev.lsdmc.arcaniteCrystals.util;
 import dev.lsdmc.arcaniteCrystals.ArcaniteCrystals;
 import dev.lsdmc.arcaniteCrystals.config.ConfigManager;
 import dev.lsdmc.arcaniteCrystals.database.PlayerDataManager;
-import dev.lsdmc.arcaniteCrystals.manager.LevelManager;
+import dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -242,7 +242,7 @@ public class EffectUtils {
         try {
             UUID playerId = player.getUniqueId();
             int playerLevel = PlayerDataManager.getLevel(playerId);
-            int tier = LevelManager.getTier(upgradeId);
+            int tier = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getTier(upgradeId);
             
             // Calculate amplifier with level bonus
             int levelBonus = LEVEL_AMPLIFIER_BONUS.getOrDefault(playerLevel, 0);

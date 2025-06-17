@@ -54,7 +54,13 @@ public class CrystalUseListener implements Listener {
         try {
             // Handle crystal identification for blank crystals
             if (CrystalManager.getCrystalEffects(item).isEmpty()) {
-                handleCrystalIdentification(player, item);
+                if (player.hasPermission("arcanite.admin")) {
+                    handleCrystalIdentification(player, item);
+                } else {
+                    // Open identification GUI instead
+                    dev.lsdmc.arcaniteCrystals.menu.CrystalIdentificationGUI gui = new dev.lsdmc.arcaniteCrystals.menu.CrystalIdentificationGUI(player);
+                    gui.open();
+                }
                 return;
             }
             
@@ -167,7 +173,7 @@ public class CrystalUseListener implements Listener {
         try {
             // Check if crystal has effects
             if (CrystalManager.getCrystalEffects(crystal).isEmpty()) {
-                player.sendMessage(ChatColor.YELLOW + "This crystal is unidentified. Right-click to reveal its effects!");
+                player.sendMessage(ChatColor.YELLOW + "This crystal is unidentified. Use the Identification workstation to reveal its effects!");
                 return;
             }
             
@@ -177,16 +183,15 @@ public class CrystalUseListener implements Listener {
                 return;
             }
             
-            // Check cooldown (double-check for safety)
-            if (CrystalManager.isOnCooldown(player)) {
-                long remaining = CrystalManager.getRemainingCooldown(player);
-                player.sendMessage(ChatColor.RED + "Crystal is on cooldown for " + formatTime(remaining / 1000) + "!");
+            // Check if crystal is activated
+            if (!CrystalManager.isActivatedCrystal(crystal)) {
+                player.sendMessage(ChatColor.YELLOW + "This crystal must be activated first! Right-click to activate it.");
                 return;
             }
             
-            // Activate crystal automatically when equipped
-            if (CrystalManager.activateCrystal(player, crystal)) {
-                MessageManager.sendNotification(player, "Crystal equipped and activated!", MessageManager.NotificationType.CRYSTAL_ACTIVATE);
+            // Start crystal effects (only for activated crystals in offhand)
+            if (CrystalManager.startCrystalEffects(player, crystal)) {
+                MessageManager.sendNotification(player, "Crystal effects started!", MessageManager.NotificationType.CRYSTAL_ACTIVATE);
             }
         } finally {
             activatingPlayers.remove(playerId);
@@ -198,8 +203,7 @@ public class CrystalUseListener implements Listener {
      */
     private void handleCrystalUnequip(Player player) {
         if (CrystalManager.hasActiveCrystal(player)) {
-            CrystalManager.deactivateCrystal(player);
-            player.sendMessage(ChatColor.GRAY + "Crystal effects deactivated.");
+            CrystalManager.stopCrystalEffects(player);
             
             // Synchronize crystal state to prevent desync
             CrystalManager.synchronizeCrystalState(player);

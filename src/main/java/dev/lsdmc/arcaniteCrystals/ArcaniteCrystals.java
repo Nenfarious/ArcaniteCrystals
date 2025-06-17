@@ -2,14 +2,18 @@
 package dev.lsdmc.arcaniteCrystals;
 
 import dev.lsdmc.arcaniteCrystals.command.ArcaniteCommand;
+import dev.lsdmc.arcaniteCrystals.command.LevelUpCommand;
 import dev.lsdmc.arcaniteCrystals.config.ConfigManager;
 import dev.lsdmc.arcaniteCrystals.database.DatabaseManager;
 import dev.lsdmc.arcaniteCrystals.listener.CrystalListener;
 import dev.lsdmc.arcaniteCrystals.manager.UpgradeManager;
+import dev.lsdmc.arcaniteCrystals.manager.CrystalRecipeManager;
+import dev.lsdmc.arcaniteCrystals.manager.CrystalCraftingManager;
 import dev.lsdmc.arcaniteCrystals.placeholder.ArcaniteExpansion;
 import dev.lsdmc.arcaniteCrystals.util.MessageManager;
 import dev.lsdmc.arcaniteCrystals.util.SoundManager;
 import dev.lsdmc.arcaniteCrystals.util.ParticleManager;
+import dev.lsdmc.arcaniteCrystals.manager.PlayerStatisticsManager;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -41,6 +45,12 @@ public class ArcaniteCrystals extends JavaPlugin {
         // Register listeners
         registerListeners();
         
+        // Register catalyst recipes
+        CrystalRecipeManager.registerRecipes();
+        
+        // Register crystal crafting recipes
+        CrystalCraftingManager.registerRecipes();
+        
         // Setup economy if available
         setupEconomy();
         
@@ -61,6 +71,13 @@ public class ArcaniteCrystals extends JavaPlugin {
         // Close database connections
         DatabaseManager.shutdown();
         
+        // BEGIN PATCH stop crystal manager tasks
+        dev.lsdmc.arcaniteCrystals.manager.CrystalManager.shutdown();
+        // END PATCH
+        
+        // Cleanup server level manager
+        dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.cleanup();
+        
         getLogger().info("ArcaniteCrystals has been disabled!");
     }
     
@@ -70,16 +87,35 @@ public class ArcaniteCrystals extends JavaPlugin {
         
         // Initialize crystal listener
         crystalListener = new CrystalListener();
+        
+        // Initialize statistics manager
+        new PlayerStatisticsManager();
+        
+        // BEGIN PATCH initialize crystal manager
+        dev.lsdmc.arcaniteCrystals.manager.CrystalManager.initialize();
+        // END PATCH
     }
     
     private void registerCommands() {
         getCommand("arcanite").setExecutor(new ArcaniteCommand());
         getCommand("arcanite").setTabCompleter(new ArcaniteCommand());
+        
+        // Register levelup command
+        getCommand("levelup").setExecutor(new LevelUpCommand());
     }
     
     private void registerListeners() {
         // Register crystal listener
         getServer().getPluginManager().registerEvents(crystalListener, this);
+        
+        // Register crystal offhand listener for proper effect handling
+        getServer().getPluginManager().registerEvents(new dev.lsdmc.arcaniteCrystals.listener.CrystalOffhandListener(), this);
+        
+        // Register crystal crafting listener
+        getServer().getPluginManager().registerEvents(new CrystalCraftingManager(), this);
+        
+        // Register server level manager listener for player join events
+        getServer().getPluginManager().registerEvents(new dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager(), this);
     }
     
     private boolean setupEconomy() {

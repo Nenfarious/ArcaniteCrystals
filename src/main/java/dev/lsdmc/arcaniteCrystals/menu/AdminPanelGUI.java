@@ -3,6 +3,10 @@ package dev.lsdmc.arcaniteCrystals.menu;
 import dev.lsdmc.arcaniteCrystals.ArcaniteCrystals;
 import dev.lsdmc.arcaniteCrystals.database.DatabaseManager;
 import dev.lsdmc.arcaniteCrystals.database.PlayerDataManager;
+import dev.lsdmc.arcaniteCrystals.menu.PlayerManagementGUI;
+import dev.lsdmc.arcaniteCrystals.menu.DatabaseStatusGUI;
+import dev.lsdmc.arcaniteCrystals.menu.MaintenanceGUI;
+import dev.lsdmc.arcaniteCrystals.menu.SystemStatsGUI;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -125,17 +129,13 @@ public class AdminPanelGUI implements InventoryHolder, Listener {
         int slot = event.getRawSlot();
         
         switch (slot) {
-            case DATABASE_SLOT -> {
-                clicker.closeInventory();
-                clicker.sendMessage(ChatColor.AQUA + "=== Database Status ===");
-                clicker.sendMessage(ChatColor.GRAY + "Mode: " + ChatColor.YELLOW + DatabaseManager.getCurrentMode());
-                clicker.sendMessage(ChatColor.GRAY + "Health: " + (DatabaseManager.isHealthy() ? 
-                    ChatColor.GREEN + "Healthy" : ChatColor.RED + "Unhealthy"));
-                clicker.sendMessage(ChatColor.GRAY + "Stats: " + ChatColor.YELLOW + DatabaseManager.getStats());
-            }
             case PLAYER_MANAGE_SLOT -> {
                 clicker.closeInventory();
-                clicker.performCommand("arcanite admin players");
+                new PlayerManagementGUI(clicker).open();
+            }
+            case DATABASE_SLOT -> {
+                clicker.closeInventory();
+                new DatabaseStatusGUI(clicker).open();
             }
             case CONFIG_SLOT -> {
                 clicker.closeInventory();
@@ -143,17 +143,16 @@ public class AdminPanelGUI implements InventoryHolder, Listener {
             }
             case MAINTENANCE_SLOT -> {
                 clicker.closeInventory();
-                clicker.performCommand("arcanite admin maintenance");
+                new MaintenanceGUI(clicker).open();
             }
             case STATS_SLOT -> {
                 clicker.closeInventory();
-                clicker.sendMessage(ChatColor.GREEN + "=== System Statistics ===");
-                clicker.sendMessage(ChatColor.GRAY + "Cache Stats: " + ChatColor.YELLOW + PlayerDataManager.getCacheStats());
-                clicker.sendMessage(ChatColor.GRAY + "Database Stats: " + ChatColor.YELLOW + DatabaseManager.getStats());
+                new SystemStatsGUI(clicker).open();
             }
             case RELOAD_SLOT -> {
                 clicker.closeInventory();
-                clicker.performCommand("arcanite admin reload");
+                clicker.getServer().reload();
+                clicker.sendMessage(ChatColor.GREEN + "Plugin & configuration reloaded.");
             }
             case CLOSE_SLOT -> clicker.closeInventory();
         }

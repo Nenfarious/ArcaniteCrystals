@@ -2,6 +2,7 @@ package dev.lsdmc.arcaniteCrystals.menu;
 
 import dev.lsdmc.arcaniteCrystals.ArcaniteCrystals;
 import dev.lsdmc.arcaniteCrystals.manager.CrystalManager;
+import dev.lsdmc.arcaniteCrystals.util.MessageManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -81,25 +82,39 @@ public class EnhancementWorkshopGUI implements InventoryHolder, Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (event.getInventory().getHolder() != this) return;
-        event.setCancelled(true);
+        
+        event.setCancelled(true); // Cancel all clicks by default
         
         Player clicker = (Player) event.getWhoClicked();
         int slot = event.getRawSlot();
         
         switch (slot) {
-            case FUSION_SLOT -> {
-                clicker.closeInventory();
-                new CrystalFusionGUI(clicker).open();
-            }
-            case SOCKET_SLOT -> {
-                clicker.closeInventory();
-                new CrystalSocketingGUI(clicker).open();
-            }
-            case IDENTIFY_SLOT -> {
+            case IDENTIFY_SLOT: // Crystal Identification
                 clicker.closeInventory();
                 new CrystalIdentificationGUI(clicker).open();
-            }
-            case CLOSE_SLOT -> clicker.closeInventory();
+                break;
+                
+            case SOCKET_SLOT: // Crystal Socketing
+                clicker.closeInventory();
+                new CrystalSocketingGUI(clicker).open();
+                break;
+                
+            case FUSION_SLOT: // Crystal Fusion
+                clicker.closeInventory();
+                new CrystalFusionGUI(clicker).open();
+                break;
+                
+            case 16: // Crystal Enhancement (future feature)
+                MessageManager.sendNotification(clicker, "Crystal Enhancement coming soon!", MessageManager.NotificationType.INFO);
+                break;
+                
+            case CLOSE_SLOT: // Close button
+                clicker.closeInventory();
+                break;
+                
+            default:
+                // All other clicks are cancelled (including filler items)
+                break;
         }
     }
 

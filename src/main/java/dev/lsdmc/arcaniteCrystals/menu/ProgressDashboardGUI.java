@@ -3,7 +3,7 @@ package dev.lsdmc.arcaniteCrystals.menu;
 import dev.lsdmc.arcaniteCrystals.ArcaniteCrystals;
 import dev.lsdmc.arcaniteCrystals.database.PlayerDataManager;
 import dev.lsdmc.arcaniteCrystals.manager.CrystalManager;
-import dev.lsdmc.arcaniteCrystals.manager.LevelManager;
+import dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -91,10 +91,10 @@ public class ProgressDashboardGUI implements InventoryHolder, Listener {
         levelLore.add(ChatColor.BLUE + "Current Level: " + ChatColor.WHITE + currentLevel + "/10");
         
         if (nextLevel <= 10) {
-            LevelManager.LevelConfig nextConfig = LevelManager.getConfigForLevel(nextLevel);
+            dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.LevelConfiguration nextConfig = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getLevelConfiguration(nextLevel);
             if (nextConfig != null) {
-                RequirementChecker checker = new RequirementChecker(player, nextConfig);
-                List<String> missing = checker.getMissing();
+                dev.lsdmc.arcaniteCrystals.util.RequirementChecker checker = new dev.lsdmc.arcaniteCrystals.util.RequirementChecker(player);
+                List<String> missing = checker.getMissingForLevel(nextLevel);
                 
                 if (missing.isEmpty()) {
                     levelLore.add(ChatColor.GREEN + "✓ Ready to level up!");
@@ -106,21 +106,23 @@ public class ProgressDashboardGUI implements InventoryHolder, Listener {
                     }
                     
                     // Progress bars for each requirement
-                    if (nextConfig.getMoneyRequirement() > 0) {
+                    var requirements = nextConfig.getRequirements();
+                    if (requirements.getMoney() > 0) {
                         double balance = getPlayerBalance();
-                        double progress = Math.min(100, balance / nextConfig.getMoneyRequirement() * 100);
+                        double progress = Math.min(100, balance / requirements.getMoney() * 100);
                         levelLore.add(ChatColor.GOLD + "Money: " + createProgressBar(progress));
                     }
                     
-                    if (nextConfig.getKillsRequirement() > 0) {
+                    if (requirements.getPlayerKills() > 0) {
                         int kills = player.getStatistic(Statistic.PLAYER_KILLS);
-                        double progress = Math.min(100, (double) kills / nextConfig.getKillsRequirement() * 100);
+                        double progress = Math.min(100, (double) kills / requirements.getPlayerKills() * 100);
                         levelLore.add(ChatColor.RED + "Kills: " + createProgressBar(progress));
                     }
                     
-                    if (nextConfig.getTimeRequirementMs() > 0) {
+                    if (requirements.getPlaytimeHours() > 0) {
                         long playtime = player.getStatistic(Statistic.PLAY_ONE_MINUTE) * 50L;
-                        double progress = Math.min(100, (double) playtime / nextConfig.getTimeRequirementMs() * 100);
+                        long playtimeHours = playtime / 3_600_000L; // Convert to hours
+                        double progress = Math.min(100, (double) playtimeHours / requirements.getPlaytimeHours() * 100);
                         levelLore.add(ChatColor.BLUE + "Time: " + createProgressBar(progress));
                     }
                 }
@@ -185,13 +187,13 @@ public class ProgressDashboardGUI implements InventoryHolder, Listener {
         Map<Integer, Integer> totalByTier = new HashMap<>();
         
         for (String upgradeId : unlocked) {
-            int tier = LevelManager.getTier(upgradeId);
+            int tier = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getTier(upgradeId);
             unlockedByTier.merge(tier, 1, Integer::sum);
         }
         
         for (int tier = 1; tier <= 3; tier++) {
             int unlockedCount = unlockedByTier.getOrDefault(tier, 0);
-            int totalCount = LevelManager.getUpgradesForTier(tier).size();
+            int totalCount = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getUpgradesForTier(tier).size();
             totalByTier.put(tier, totalCount);
             
             double tierPercent = totalCount > 0 ? (double) unlockedCount / totalCount * 100 : 0;
@@ -265,28 +267,29 @@ public class ProgressDashboardGUI implements InventoryHolder, Listener {
         
         List<String> reqLore = new ArrayList<>();
         if (nextLevel <= 10) {
-            LevelManager.LevelConfig nextConfig = LevelManager.getConfigForLevel(nextLevel);
+            dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.LevelConfiguration nextConfig = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getLevelConfiguration(nextLevel);
             if (nextConfig != null) {
                 reqLore.add(ChatColor.GRAY + "Requirements for Level " + nextLevel + ":");
+                var requirements = nextConfig.getRequirements();
                 
-                if (nextConfig.getMoneyRequirement() > 0) {
+                if (requirements.getMoney() > 0) {
                     double balance = getPlayerBalance();
                     reqLore.add(ChatColor.GOLD + "Money: " + ChatColor.WHITE + 
                               String.format("$%.2f", balance) + "/" + 
-                              String.format("$%.2f", nextConfig.getMoneyRequirement()));
+                              String.format("$%.2f", requirements.getMoney()));
                 }
                 
-                if (nextConfig.getKillsRequirement() > 0) {
+                if (requirements.getPlayerKills() > 0) {
                     int kills = player.getStatistic(Statistic.PLAYER_KILLS);
                     reqLore.add(ChatColor.RED + "Kills: " + ChatColor.WHITE + 
-                              kills + "/" + nextConfig.getKillsRequirement());
+                              kills + "/" + requirements.getPlayerKills());
                 }
                 
-                if (nextConfig.getTimeRequirementMs() > 0) {
+                if (requirements.getPlaytimeHours() > 0) {
                     long playtime = player.getStatistic(Statistic.PLAY_ONE_MINUTE) * 50L;
+                    long playtimeHours = playtime / 3_600_000L;
                     reqLore.add(ChatColor.BLUE + "Playtime: " + ChatColor.WHITE + 
-                              formatTime(playtime) + "/" + 
-                              formatTime(nextConfig.getTimeRequirementMs()));
+                              playtimeHours + "h/" + requirements.getPlaytimeHours() + "h");
                 }
             }
         } else {

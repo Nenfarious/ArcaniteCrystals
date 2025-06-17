@@ -37,7 +37,7 @@ import com.google.gson.Gson;
  */
 public class CrystalManager {
 
-    private static final NamespacedKey KEY_CRYSTAL = new NamespacedKey(ArcaniteCrystals.getInstance(), "crystal");
+    public static final NamespacedKey KEY_CRYSTAL = new NamespacedKey(ArcaniteCrystals.getInstance(), "crystal");
     public static final NamespacedKey KEY_ABILITIES = new NamespacedKey(ArcaniteCrystals.getInstance(), "crystal_abilities");
     public static final NamespacedKey KEY_ENERGY = new NamespacedKey(ArcaniteCrystals.getInstance(), "crystal_energy");
     public static final NamespacedKey KEY_TIER = new NamespacedKey(ArcaniteCrystals.getInstance(), "crystal_tier");
@@ -66,10 +66,34 @@ public class CrystalManager {
      * Initializes the crystal manager with configuration values.
      */
     public static void initialize() {
-        loadConfiguration();
-        startEnergyDrainTask();
-        startAuraEffectTask();
-        ArcaniteCrystals.getInstance().getLogger().info("CrystalManager initialized successfully");
+        try {
+            // Load configuration
+            maxEnergy = ConfigManager.getConfig().getInt("crystal.energy", 18000);
+            energyDrain = ConfigManager.getConfig().getInt("crystal.drain", 80);
+            cooldownMs = ConfigManager.getConfig().getLong("crystal.cooldown", 300) * 1000;
+            
+            String matName = ConfigManager.getConfig().getString("crystal.material", "DIAMOND");
+            crystalMaterial = Material.matchMaterial(matName);
+            if (crystalMaterial == null) crystalMaterial = Material.DIAMOND;
+            
+            String rechargeName = ConfigManager.getConfig().getString("crystal.recharge-material", "QUARTZ");
+            rechargeMaterial = Material.matchMaterial(rechargeName);
+            if (rechargeMaterial == null) rechargeMaterial = Material.QUARTZ;
+            
+            // Start energy drain task
+            startEnergyDrainTask();
+            
+            // Start aura effect task
+            startAuraEffectTask();
+            
+            // Start effect applier
+            EffectApplierManager.start(ArcaniteCrystals.getInstance());
+            
+            ArcaniteCrystals.getInstance().getLogger().info("CrystalManager initialized successfully");
+        } catch (Exception e) {
+            ArcaniteCrystals.getInstance().getLogger().severe("Error initializing CrystalManager: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     
     /**
@@ -115,16 +139,17 @@ public class CrystalManager {
     }
 
     /**
-     * Checks if a crystal is activated and has energy.
+     * Checks if a crystal is activated.
      */
-    public static boolean isActivatedCrystal(ItemStack item) {
-        if (!isCrystal(item)) return false;
-        try {
-            Integer energy = item.getItemMeta().getPersistentDataContainer().get(KEY_ENERGY, PersistentDataType.INTEGER);
-            return energy != null && energy > 0;
-        } catch (Exception e) {
-            return false;
-        }
+    public static boolean isActivatedCrystal(ItemStack crystal) {
+        if (!isCrystal(crystal)) return false;
+        
+        ItemMeta meta = crystal.getItemMeta();
+        if (meta == null) return false;
+        
+        PersistentDataContainer container = meta.getPersistentDataContainer();
+        return container.has(CRYSTAL_ACTIVATED_KEY, PersistentDataType.BYTE) &&
+               container.get(CRYSTAL_ACTIVATED_KEY, PersistentDataType.BYTE) == 1;
     }
 
     /**
@@ -149,11 +174,19 @@ public class CrystalManager {
             Material material = Material.matchMaterial(matName);
             if (material == null) material = Material.DIAMOND;
             
-            List<String> lore = Arrays.asList(
-                ChatColor.GRAY + "(Unidentified Crystal)",
-                ChatColor.DARK_GRAY + "Right-click to activate",
-                ChatColor.DARK_PURPLE + "✨ Mystical Energy Contained ✨"
-            );
+            List<String> lore;
+            if (player.hasPermission("arcanite.admin")) {
+                lore = Arrays.asList(
+                    ChatColor.GRAY + "(Unidentified Crystal)",
+                    ChatColor.DARK_GRAY + "Right-click to identify", // admin hint
+                    ChatColor.DARK_PURPLE + "✨ Mystical Energy Contained ✨"
+                );
+            } else {
+                lore = Arrays.asList(
+                    ChatColor.GRAY + "(Unidentified Crystal)",
+                    ChatColor.DARK_PURPLE + "✨ Mystical Energy Contained ✨"
+                );
+            }
             
             ItemStack crystal = EffectUtils.buildCrystalItem(
                     material,
@@ -187,88 +220,158 @@ public class CrystalManager {
     }
 
     /**
-     * Activates a crystal with comprehensive validation.
+     * Activates a crystal for a player (one-time activation only).
      */
-    public static void activateCrystal(Player player) {
-        try {
-            ItemStack item = player.getInventory().getItemInMainHand();
-            if (!isCrystal(item)) {
-                player.sendMessage(ChatColor.RED + "You must hold an Arcanite Crystal!");
-                return;
-            }
-
-            UUID uuid = player.getUniqueId();
-            long now = System.currentTimeMillis();
-            long last = PlayerDataManager.getCooldown(uuid);
-            long cooldownMs = ConfigManager.getConfig().getLong("crystal.cooldown", 300) * 1000;
-
-            // Check cooldown
-            if (now < last + cooldownMs) {
-                long secsLeft = (last + cooldownMs - now) / 1000;
-                player.sendMessage(ChatColor.YELLOW + "⏰ Crystal Cooldown: " + 
-                                 ChatColor.RED + secsLeft + "s " + ChatColor.YELLOW + "remaining");
-                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.5f, 0.8f);
-                return;
-            }
-
-            // Get player's available upgrades
-            int tier = LevelManager.getMaxTier(uuid);
-            int slots = LevelManager.getSlots(uuid);
-            Set<String> allUpgrades = PlayerDataManager.getUnlockedUpgrades(uuid);
-            
-            // Filter by tier and convert to list
-            List<String> availableUpgrades = allUpgrades.stream()
-                    .filter(id -> LevelManager.getTier(id) <= tier)
-                    .collect(Collectors.toList());
-
-            if (availableUpgrades.isEmpty()) {
-                player.sendMessage(ChatColor.RED + "You have no unlocked upgrades! Visit /arcanite talents to unlock some.");
-                return;
-            }
-
-            // Select random abilities
-            Collections.shuffle(availableUpgrades);
-            List<String> chosenAbilities = availableUpgrades.stream()
-                    .limit(Math.min(slots, availableUpgrades.size()))
-                    .collect(Collectors.toList());
-
-            // Update crystal
-            ItemMeta meta = item.getItemMeta();
-            if (meta == null) {
-                player.sendMessage(ChatColor.RED + "Crystal error - invalid metadata!");
-                return;
-            }
-
-            // Set abilities and energy
-            meta.getPersistentDataContainer().set(KEY_ABILITIES, PersistentDataType.STRING, 
-                    String.join(",", chosenAbilities));
-            int initialEnergy = ConfigManager.getConfig().getInt("crystal.energy", 18000);
-            meta.getPersistentDataContainer().set(KEY_ENERGY, PersistentDataType.INTEGER, initialEnergy);
-            
-            // Update lore
-            updateCrystalLore(item, meta, chosenAbilities, initialEnergy, initialEnergy);
-            
-            item.setItemMeta(meta);
-
-            // Set cooldown
-            PlayerDataManager.setCooldown(uuid, now);
-
-            // Success feedback
-            SoundManager.playCrystalActivateSound(player);
-            ParticleManager.playCrystalActivationEffect(player);
-            MessageManager.sendCrystalActivated(player, chosenAbilities, initialEnergy);
-            
-            // Title notification
-            MessageManager.showTitle(player, 
-                "⚡ CRYSTAL ACTIVATED ⚡",
-                "Hold in off-hand to use");
-                
-        } catch (Exception e) {
-            player.sendMessage(ChatColor.RED + "Error activating crystal: " + e.getMessage());
-            ArcaniteCrystals.getInstance().getLogger().warning("Error activating crystal for " + player.getName() + ": " + e.getMessage());
+    public static boolean activateCrystal(Player player, ItemStack crystal) {
+        if (!isCrystal(crystal)) return false;
+        
+        // Check if crystal is already permanently activated
+        if (isActivatedCrystal(crystal)) {
+            player.sendMessage(ChatColor.YELLOW + "This crystal has already been activated! Place it in your off-hand to use its effects.");
+            return false;
         }
+        
+        List<String> effects = getCrystalEffects(crystal);
+        if (effects.isEmpty()) {
+            player.sendMessage(ChatColor.RED + "This crystal has no effects! Right-click to identify it first.");
+            return false;
+        }
+        
+        int energy = getEnergy(crystal);
+        if (energy <= 0) {
+            player.sendMessage(ChatColor.RED + "This crystal is depleted! Use quartz to recharge it.");
+            SoundManager.playCrystalDepletionSound(player);
+            return false;
+        }
+        
+        // Check cooldown
+        if (isOnCooldown(player)) {
+            long remaining = getRemainingCooldown(player);
+            player.sendMessage(ChatColor.RED + "Crystal is on cooldown for " + formatTime(remaining / 1000) + "!");
+            SoundManager.playCooldownSound(player);
+            ParticleManager.playCooldownWarningEffect(player);
+            return false;
+        }
+        
+        // PERMANENTLY mark crystal as activated (one-time only)
+        ItemMeta meta = crystal.getItemMeta();
+        PersistentDataContainer container = meta.getPersistentDataContainer();
+        container.set(CRYSTAL_ACTIVATED_KEY, PersistentDataType.BYTE, (byte) 1);
+        crystal.setItemMeta(meta);
+        
+        // Set cooldown for activation
+        PlayerDataManager.setCooldown(player.getUniqueId(), System.currentTimeMillis() + cooldownMs);
+        
+        // Feedback
+        String effectNames = effects.stream()
+                .map(CrystalManager::beautifyEffectName)
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("Unknown");
+        
+        player.sendMessage(ChatColor.GREEN + "✨ Crystal permanently activated!");
+        player.sendMessage(ChatColor.YELLOW + "Effects: " + ChatColor.WHITE + effectNames);
+        player.sendMessage(ChatColor.GRAY + "Hold in off-hand to use the effects.");
+        
+        MessageManager.sendCrystalActivated(player, effects, energy);
+        SoundManager.playCrystalActivateSound(player);
+        ParticleManager.playCrystalActivationEffect(player);
+        
+        return true;
+    }
+    
+    /**
+     * Starts crystal effects when equipped in offhand (for activated crystals only).
+     */
+    public static boolean startCrystalEffects(Player player, ItemStack crystal) {
+        if (!isCrystal(crystal) || !isActivatedCrystal(crystal)) return false;
+        
+        List<String> effects = getCrystalEffects(crystal);
+        if (effects.isEmpty()) return false;
+        
+        int energy = getEnergy(crystal);
+        if (energy <= 0) {
+            player.sendMessage(ChatColor.RED + "This crystal is depleted! Use quartz to recharge it.");
+            return false;
+        }
+        
+        // Start tracking this crystal for effects
+        activeCrystals.put(player.getUniqueId(), crystal.clone());
+        
+        // Apply effects
+        applyEffects(player, effects);
+        
+        // Start effect applier for this player
+        EffectApplierManager.addActive(player.getUniqueId());
+        
+        player.sendMessage(ChatColor.GREEN + "Crystal effects are now active!");
+        
+        return true;
+    }
+    
+    /**
+     * Stops crystal effects when removed from offhand.
+     */
+    public static void stopCrystalEffects(Player player) {
+        ItemStack activeCrystal = activeCrystals.remove(player.getUniqueId());
+        if (activeCrystal == null) return;
+        
+        // Remove effects
+        removeEffects(player, getCrystalEffects(activeCrystal));
+        
+        // Remove from effect applier
+        EffectApplierManager.removeActive(player.getUniqueId());
+        
+        player.sendMessage(ChatColor.GRAY + "Crystal effects have stopped.");
     }
 
+    /**
+     * Applies potion effects based on crystal effects.
+     */
+    private static void applyEffects(Player player, List<String> effectIds) {
+        for (String effectId : effectIds) {
+            ConfigurationSection upgrade = ConfigManager.getUpgradesConfig()
+                    .getConfigurationSection("upgrades." + effectId);
+            
+            if (upgrade == null) continue;
+            
+            String effectName = upgrade.getString("effect", "SPEED");
+            int amplifier = upgrade.getInt("amplifier", 0);
+            
+            try {
+                PotionEffectType effectType = PotionEffectType.getByName(effectName);
+                if (effectType != null) {
+                    PotionEffect effect = new PotionEffect(effectType, Integer.MAX_VALUE, amplifier, false, false);
+                    player.addPotionEffect(effect, true);
+                }
+            } catch (Exception e) {
+                ArcaniteCrystals.getInstance().getLogger().warning("Invalid effect: " + effectName);
+            }
+        }
+    }
+    
+    /**
+     * Removes potion effects.
+     */
+    private static void removeEffects(Player player, List<String> effectIds) {
+        for (String effectId : effectIds) {
+            ConfigurationSection upgrade = ConfigManager.getUpgradesConfig()
+                    .getConfigurationSection("upgrades." + effectId);
+            
+            if (upgrade == null) continue;
+            
+            String effectName = upgrade.getString("effect", "SPEED");
+            
+            try {
+                PotionEffectType effectType = PotionEffectType.getByName(effectName);
+                if (effectType != null) {
+                    player.removePotionEffect(effectType);
+                }
+            } catch (Exception e) {
+                // Ignore errors when removing effects
+            }
+        }
+    }
+    
     /**
      * Recharges a depleted crystal.
      */
@@ -337,18 +440,10 @@ public class CrystalManager {
     }
 
     /**
-     * Gets the abilities from a crystal.
+     * Gets abilities from a crystal (legacy method for compatibility).
      */
-    public static List<String> getAbilities(ItemStack item) {
-        if (!isActivatedCrystal(item)) return Collections.emptyList();
-        try {
-            String data = item.getItemMeta().getPersistentDataContainer().get(KEY_ABILITIES, PersistentDataType.STRING);
-            return (data == null || data.isBlank()) 
-                    ? Collections.emptyList() 
-                    : Arrays.asList(data.split(","));
-        } catch (Exception e) {
-            return Collections.emptyList();
-        }
+    public static List<String> getAbilities(ItemStack crystal) {
+        return getCrystalEffects(crystal);
     }
 
     /**
@@ -378,16 +473,37 @@ public class CrystalManager {
         lore.add(ChatColor.LIGHT_PURPLE + "✦ Arcanite Crystal ✦");
         lore.add("");
         
+        // Add activation status
+        if (isActivatedCrystal(crystal)) {
+            lore.add(ChatColor.GREEN + "✓ Activated");
+        } else {
+            lore.add(ChatColor.YELLOW + "⚠ Not Activated");
+            lore.add(ChatColor.GRAY + "Right-click to activate");
+        }
+        lore.add("");
+        
         // Add effects
-        lore.add(ChatColor.BLUE + "Effects:");
-        for (String effect : effects) {
-            lore.add(ChatColor.GRAY + "► " + ChatColor.WHITE + beautifyEffectName(effect));
+        if (!effects.isEmpty()) {
+            lore.add(ChatColor.BLUE + "Effects:");
+            for (String effect : effects) {
+                lore.add(ChatColor.GRAY + "► " + ChatColor.WHITE + beautifyEffectName(effect));
+            }
+            lore.add("");
         }
         
-        // Add energy bar
-        lore.add("");
+        // Add energy bar with visual representation
         lore.add(ChatColor.AQUA + "Energy: " + formatEnergyBar(currentEnergy, maxEnergy));
         lore.add(ChatColor.GRAY + String.valueOf(currentEnergy) + "/" + maxEnergy);
+        
+        // Add usage instructions
+        lore.add("");
+        if (currentEnergy <= 0) {
+            lore.add(ChatColor.RED + "⚠ Depleted - Use Quartz to recharge");
+        } else if (isActivatedCrystal(crystal)) {
+            lore.add(ChatColor.GREEN + "Hold in off-hand to use effects");
+        } else {
+            lore.add(ChatColor.YELLOW + "Right-click to activate first");
+        }
         
         meta.setLore(lore);
         crystal.setItemMeta(meta);
@@ -466,8 +582,8 @@ public class CrystalManager {
     public static ItemStack createMysteryCrystal(Player player) {
         // Determine available effects based on player level
         int playerLevel = PlayerDataManager.getLevel(player.getUniqueId());
-        int maxTier = LevelManager.getMaxTier(player.getUniqueId());
-        int slots = LevelManager.getSlots(player.getUniqueId());
+        int maxTier = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getMaxTier(player.getUniqueId());
+        int slots = dev.lsdmc.arcaniteCrystals.manager.ServerLevelManager.getSlots(player.getUniqueId());
         Set<String> unlockedUpgrades = PlayerDataManager.getUnlockedUpgrades(player.getUniqueId());
         
         // Select random effects from unlocked upgrades
@@ -497,17 +613,25 @@ public class CrystalManager {
         ItemMeta meta = crystal.getItemMeta();
         if (meta == null) return crystal;
         
-        // Set crystal data
+        // Mark as an Arcanite crystal
         PersistentDataContainer container = meta.getPersistentDataContainer();
-        container.set(KEY_ABILITIES, PersistentDataType.STRING, String.join(",", effects));
-        
+        container.set(KEY_CRYSTAL, PersistentDataType.BYTE, (byte) 1);
+
+        // Store effects under both modern and legacy keys for safety
+        String effectCsv = String.join(",", effects);
+        container.set(KEY_ABILITIES, PersistentDataType.STRING, effectCsv);
+        container.set(CRYSTAL_EFFECTS_KEY, PersistentDataType.STRING, effectCsv);
+
         // Set initial energy
         int initialEnergy = ConfigManager.getConfig().getInt("crystal.energy", 18000);
         container.set(KEY_ENERGY, PersistentDataType.INTEGER, initialEnergy);
-        
+
+        // Standard display name
+        meta.setDisplayName(ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + "ARCANITE CRYSTAL");
+
         // Update lore
         updateCrystalLore(crystal, meta, effects, initialEnergy, initialEnergy);
-        
+
         crystal.setItemMeta(meta);
         return crystal;
     }
@@ -586,15 +710,21 @@ public class CrystalManager {
      */
     public static List<String> getCrystalEffects(ItemStack crystal) {
         if (!isCrystal(crystal)) return new ArrayList<>();
-        
+
         ItemMeta meta = crystal.getItemMeta();
+        if (meta == null) return new ArrayList<>();
+
         PersistentDataContainer container = meta.getPersistentDataContainer();
-        String effectsStr = container.get(CRYSTAL_EFFECTS_KEY, PersistentDataType.STRING);
-        
+        // Prefer the modern KEY_ABILITIES key, but allow legacy CRYSTAL_EFFECTS_KEY for backward compatibility
+        String effectsStr = container.get(KEY_ABILITIES, PersistentDataType.STRING);
+        if (effectsStr == null || effectsStr.isEmpty()) {
+            effectsStr = container.get(CRYSTAL_EFFECTS_KEY, PersistentDataType.STRING);
+        }
+
         if (effectsStr == null || effectsStr.isEmpty()) {
             return new ArrayList<>();
         }
-        
+
         return Arrays.asList(effectsStr.split(","));
     }
     
@@ -665,154 +795,6 @@ public class CrystalManager {
     }
     
     /**
-     * Activates a crystal for a player.
-     */
-    public static boolean activateCrystal(Player player, ItemStack crystal) {
-        if (!isCrystal(crystal)) return false;
-        
-        List<String> effects = getCrystalEffects(crystal);
-        if (effects.isEmpty()) {
-            player.sendMessage(ChatColor.RED + "This crystal has no effects! Right-click to identify it first.");
-            return false;
-        }
-        
-        int energy = getEnergy(crystal);
-        if (energy <= 0) {
-            player.sendMessage(ChatColor.RED + "This crystal is depleted! Use quartz to recharge it.");
-            SoundManager.playCrystalDepletionSound(player);
-            return false;
-        }
-        
-        // Check cooldown
-        if (isOnCooldown(player)) {
-            long remaining = getRemainingCooldown(player);
-            player.sendMessage(ChatColor.RED + "Crystal is on cooldown for " + formatTime(remaining / 1000) + "!");
-            SoundManager.playCooldownSound(player);
-            ParticleManager.playCooldownWarningEffect(player);
-            return false;
-        }
-        
-        // Activate crystal
-        activeCrystals.put(player.getUniqueId(), crystal.clone());
-        
-        // Apply effects
-        applyEffects(player, effects);
-        
-        // Mark as activated
-        ItemMeta meta = crystal.getItemMeta();
-        PersistentDataContainer container = meta.getPersistentDataContainer();
-        container.set(CRYSTAL_ACTIVATED_KEY, PersistentDataType.BYTE, (byte) 1);
-        crystal.setItemMeta(meta);
-        
-        // Feedback
-        String effectNames = effects.stream()
-                .map(CrystalManager::beautifyEffectName)
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("Unknown");
-        
-        MessageManager.sendCrystalActivated(player, effects, energy);
-        SoundManager.playCrystalActivateSound(player);
-        ParticleManager.playCrystalActivationEffect(player);
-        
-        return true;
-    }
-    
-    /**
-     * Deactivates a crystal for a player.
-     */
-    public static void deactivateCrystal(Player player) {
-        ItemStack activeCrystal = activeCrystals.remove(player.getUniqueId());
-        if (activeCrystal == null) return;
-        
-        // Remove effects
-        removeEffects(player, getCrystalEffects(activeCrystal));
-        
-        // Set cooldown
-        PlayerDataManager.setCooldown(player.getUniqueId(), System.currentTimeMillis() + cooldownMs);
-        
-        player.sendMessage(ChatColor.GRAY + "Crystal effects have ended.");
-    }
-    
-    /**
-     * Applies potion effects based on crystal effects.
-     */
-    private static void applyEffects(Player player, List<String> effectIds) {
-        for (String effectId : effectIds) {
-            ConfigurationSection upgrade = ConfigManager.getUpgradesConfig()
-                    .getConfigurationSection("upgrades." + effectId);
-            
-            if (upgrade == null) continue;
-            
-            String effectName = upgrade.getString("effect", "SPEED");
-            int amplifier = upgrade.getInt("amplifier", 0);
-            
-            try {
-                PotionEffectType effectType = PotionEffectType.getByName(effectName);
-                if (effectType != null) {
-                    PotionEffect effect = new PotionEffect(effectType, Integer.MAX_VALUE, amplifier, false, false);
-                    player.addPotionEffect(effect, true);
-                }
-            } catch (Exception e) {
-                ArcaniteCrystals.getInstance().getLogger().warning("Invalid effect: " + effectName);
-            }
-        }
-    }
-    
-    /**
-     * Removes potion effects.
-     */
-    private static void removeEffects(Player player, List<String> effectIds) {
-        for (String effectId : effectIds) {
-            ConfigurationSection upgrade = ConfigManager.getUpgradesConfig()
-                    .getConfigurationSection("upgrades." + effectId);
-            
-            if (upgrade == null) continue;
-            
-            String effectName = upgrade.getString("effect", "SPEED");
-            
-            try {
-                PotionEffectType effectType = PotionEffectType.getByName(effectName);
-                if (effectType != null) {
-                    player.removePotionEffect(effectType);
-                }
-            } catch (Exception e) {
-                // Ignore errors when removing effects
-            }
-        }
-    }
-    
-    /**
-     * Recharges a crystal using quartz.
-     */
-    public static boolean rechargeCrystal(Player player, ItemStack crystal, ItemStack quartz) {
-        if (!isCrystal(crystal)) return false;
-        if (quartz.getType() != rechargeMaterial) return false;
-        
-        List<String> effects = getCrystalEffects(crystal);
-        if (effects.isEmpty()) {
-            player.sendMessage(ChatColor.RED + "Cannot recharge an unidentified crystal!");
-            return false;
-        }
-        
-        int currentEnergy = getEnergy(crystal);
-        if (currentEnergy >= maxEnergy) {
-            player.sendMessage(ChatColor.YELLOW + "This crystal is already fully charged!");
-            return false;
-        }
-        
-        // Consume quartz and recharge
-        quartz.setAmount(quartz.getAmount() - 1);
-        setEnergy(crystal, maxEnergy);
-        
-        // Feedback
-        MessageManager.sendNotification(player, "Crystal recharged successfully!", MessageManager.NotificationType.SUCCESS);
-        SoundManager.playCrystalRechargeSound(player);
-        ParticleManager.playCrystalRechargeEffect(player);
-        
-        return true;
-    }
-    
-    /**
      * Checks if player is on crystal cooldown.
      */
     public static boolean isOnCooldown(Player player) {
@@ -846,7 +828,7 @@ public class CrystalManager {
      * Handles player disconnection - cleans up active crystals.
      */
     public static void handlePlayerDisconnect(Player player) {
-        deactivateCrystal(player);
+        stopCrystalEffects(player);
         lastEffectTick.remove(player.getUniqueId());
     }
     
@@ -869,7 +851,7 @@ public class CrystalManager {
                     
                     if (currentEnergy <= 0) {
                         // Crystal depleted
-                        deactivateCrystal(player);
+                        stopCrystalEffects(player);
                         
                         player.sendMessage(ChatColor.RED + "Your crystal has been depleted!");
                         SoundManager.playCrystalDepletionSound(player);
@@ -878,13 +860,25 @@ public class CrystalManager {
                     }
                     
                     // Drain energy
-                    setEnergy(crystal, currentEnergy - energyDrain);
+                    int newEnergy = Math.max(0, currentEnergy - energyDrain);
+                    setEnergy(crystal, newEnergy);
                     
                     // Update the crystal in player's inventory
                     ItemStack offhand = player.getInventory().getItemInOffHand();
                     if (isCrystal(offhand)) {
-                        setEnergy(offhand, currentEnergy - energyDrain);
+                        setEnergy(offhand, newEnergy);
+                        
+                        // Update crystal lore with new energy
+                        ItemMeta meta = offhand.getItemMeta();
+                        if (meta != null) {
+                            List<String> effects = getCrystalEffects(offhand);
+                            int maxEnergy = getMaxEnergy(offhand);
+                            updateCrystalLore(offhand, meta, effects, newEnergy, maxEnergy);
+                        }
                     }
+                    
+                    // Update active crystal in memory
+                    activeCrystals.put(entry.getKey(), offhand != null && isCrystal(offhand) ? offhand.clone() : crystal);
                 }
             }
         }.runTaskTimer(ArcaniteCrystals.getInstance(), 0L, 20L); // Every second
@@ -923,19 +917,21 @@ public class CrystalManager {
     }
     
     /**
-     * Shuts down the crystal manager.
+     * Shutdown method for cleanup.
      */
     public static void shutdown() {
-        // Deactivate all crystals
-        for (UUID playerId : new HashSet<>(activeCrystals.keySet())) {
-            Player player = ArcaniteCrystals.getInstance().getServer().getPlayer(playerId);
-            if (player != null) {
-                deactivateCrystal(player);
-            }
+        try {
+            // Stop effect applier
+            EffectApplierManager.stop();
+            
+            // Clear active crystals
+            activeCrystals.clear();
+            lastEffectTick.clear();
+            
+            ArcaniteCrystals.getInstance().getLogger().info("CrystalManager shutdown complete");
+        } catch (Exception e) {
+            ArcaniteCrystals.getInstance().getLogger().warning("Error during CrystalManager shutdown: " + e.getMessage());
         }
-        
-        activeCrystals.clear();
-        lastEffectTick.clear();
     }
 
     /**
@@ -1070,75 +1066,21 @@ public class CrystalManager {
      * Create a basic crystal
      */
     public static ItemStack createBasicCrystal() {
-        ItemStack crystal = new ItemStack(Material.AMETHYST_SHARD);
-        ItemMeta meta = crystal.getItemMeta();
-        meta.setDisplayName(ChatColor.LIGHT_PURPLE + "Basic Crystal");
-        
-        List<String> lore = new ArrayList<>();
-        lore.add(ChatColor.GRAY + "A basic crystal that can hold");
-        lore.add(ChatColor.GRAY + "one effect when identified.");
-        lore.add("");
-        lore.add(ChatColor.YELLOW + "Right-click to identify");
-        
-        meta.setLore(lore);
-        crystal.setItemMeta(meta);
-        
-        // Set crystal type
-        PersistentDataContainer container = meta.getPersistentDataContainer();
-        container.set(CRYSTAL_TYPE_KEY, PersistentDataType.STRING, CrystalType.BASIC.name());
-        container.set(CRYSTAL_ENERGY_KEY, PersistentDataType.INTEGER, CrystalType.BASIC.getBaseEnergy());
-        
-        return crystal;
+        return createTieredCrystal(CrystalCraftingManager.CrystalTier.APPRENTICE);
     }
     
     /**
      * Create an enhanced crystal
      */
     public static ItemStack createEnhancedCrystal() {
-        ItemStack crystal = new ItemStack(Material.AMETHYST_SHARD);
-        ItemMeta meta = crystal.getItemMeta();
-        meta.setDisplayName(ChatColor.AQUA + "Enhanced Crystal");
-        
-        List<String> lore = new ArrayList<>();
-        lore.add(ChatColor.GRAY + "An enhanced crystal that can hold");
-        lore.add(ChatColor.GRAY + "two effects when identified.");
-        lore.add("");
-        lore.add(ChatColor.YELLOW + "Right-click to identify");
-        
-        meta.setLore(lore);
-        crystal.setItemMeta(meta);
-        
-        // Set crystal type
-        PersistentDataContainer container = meta.getPersistentDataContainer();
-        container.set(CRYSTAL_TYPE_KEY, PersistentDataType.STRING, CrystalType.ENHANCED.name());
-        container.set(CRYSTAL_ENERGY_KEY, PersistentDataType.INTEGER, CrystalType.ENHANCED.getBaseEnergy());
-        
-        return crystal;
+        return createTieredCrystal(CrystalCraftingManager.CrystalTier.ADEPT);
     }
     
     /**
      * Create a master crystal
      */
     public static ItemStack createMasterCrystal() {
-        ItemStack crystal = new ItemStack(Material.AMETHYST_SHARD);
-        ItemMeta meta = crystal.getItemMeta();
-        meta.setDisplayName(ChatColor.GOLD + "Master Crystal");
-        
-        List<String> lore = new ArrayList<>();
-        lore.add(ChatColor.GRAY + "A master crystal that can hold");
-        lore.add(ChatColor.GRAY + "three effects when identified.");
-        lore.add("");
-        lore.add(ChatColor.YELLOW + "Right-click to identify");
-        
-        meta.setLore(lore);
-        crystal.setItemMeta(meta);
-        
-        // Set crystal type
-        PersistentDataContainer container = meta.getPersistentDataContainer();
-        container.set(CRYSTAL_TYPE_KEY, PersistentDataType.STRING, CrystalType.MASTER.name());
-        container.set(CRYSTAL_ENERGY_KEY, PersistentDataType.INTEGER, CrystalType.MASTER.getBaseEnergy());
-        
-        return crystal;
+        return createTieredCrystal(CrystalCraftingManager.CrystalTier.MASTERWORK);
     }
     
     /**
@@ -1334,5 +1276,27 @@ public class CrystalManager {
         }
         
         return result;
+    }
+
+    // Helper to build tiered crystals consistently
+    private static ItemStack createTieredCrystal(CrystalCraftingManager.CrystalTier tier) {
+        String matName = ConfigManager.getConfig().getString("crystal.material", "DIAMOND");
+        Material material = Material.matchMaterial(matName);
+        if (material == null) material = Material.DIAMOND;
+
+        ItemStack crystal = new ItemStack(material);
+        ItemMeta meta = crystal.getItemMeta();
+        meta.setDisplayName(ChatColor.LIGHT_PURPLE + tier.getDisplayName());
+
+        List<String> lore = new ArrayList<>();
+        switch (tier) {
+            case APPRENTICE -> lore.add(ChatColor.GRAY + "A novice crystal awaiting discovery.");
+            case ADEPT -> lore.add(ChatColor.GRAY + "A refined crystal brimming with power.");
+            case MASTERWORK -> lore.add(ChatColor.GRAY + "A masterwork crystal of immense potential.");
+        }
+        lore.add(ChatColor.YELLOW + "Identify at the workstation");
+        meta.setLore(lore);
+        crystal.setItemMeta(meta);
+        return crystal;
     }
 }

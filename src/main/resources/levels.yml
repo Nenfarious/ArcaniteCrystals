@@ -1,20 +1,29 @@
 # levels.yml
-# Defines Levels I–X: tags, rank-up requirements, permanent buffs,
-# how many crystal effects roll, and highest effect tier available.
+# Comprehensive Server-Wide Leveling System
+# Defines player progression from Level I-X with meaningful ranks, requirements, and server-wide benefits.
+# This leveling system represents the overall player status and progression throughout the entire server.
 
 level-1:
-  tag: "&7[ɪ]"
+  tag: "&7[&fInitiate&7]"
+  display-name: "Arcane Initiate"
+  description: "A newcomer to the realm of Arcanite magic"
   requirements:
     money: 2500
-    kills: 10
+    kills: 5
     time: 0      # hours
-  tier: 1        # max-effect-tier
+  tier: 1        # max crystal effect tier
   crystal-slots: 1
   buffs:
-    walk_speed: 0.02
+    walk_speed: 0.02    # Slight movement boost
+  permissions:
+    - "server.novice"
+  commands:
+    - "say {player} has become an Arcane Initiate!"
 
 level-2:
-  tag: "&7[ɪɪ]"
+  tag: "&e[&6Adept&e]"
+  display-name: "Arcanite Adept"
+  description: "One who has begun to harness the power of crystals"
   requirements:
     money: 10000
     kills: 0
@@ -22,21 +31,33 @@ level-2:
   tier: 1
   crystal-slots: 1
   buffs:
-    max_health: 2.0
+    max_health: 2.0     # +1 heart
+  permissions:
+    - "server.apprentice"
+    - "server.novice"
 
 level-3:
-  tag: "&6[ɪɪɪ]"
+  tag: "&a[&2Channeler&a]"
+  display-name: "Crystal Channeler"
+  description: "A practitioner skilled in directing crystal energies"
   requirements:
     money: 25000
-    kills: 50
+    kills: 25
     time: 8      # hours
   tier: 2
   crystal-slots: 2
   buffs:
     walk_speed: 0.03
+    max_health: 2.0
+  permissions:
+    - "server.journeyman"
+    - "server.apprentice" 
+    - "server.novice"
 
 level-4:
-  tag: "&b[ɪᴠ]"
+  tag: "&b[&3Resonator&b]"
+  display-name: "Arcanite Resonator"
+  description: "One who can harmonize multiple crystal frequencies"
   requirements:
     money: 50000
     kills: 0
@@ -44,21 +65,37 @@ level-4:
   tier: 2
   crystal-slots: 2
   buffs:
-    max_health: 4.0
+    max_health: 4.0     # +2 hearts total
+  permissions:
+    - "server.expert"
+    - "server.journeyman"
+    - "server.apprentice"
+    - "server.novice"
 
 level-5:
-  tag: "&b[ᴠ]"
+  tag: "&d[&5Amplifier&d]"
+  display-name: "Crystal Amplifier"
+  description: "A master at intensifying crystal energies"
   requirements:
     money: 100000
-    kills: 150
+    kills: 75
     time: 48     # hours
   tier: 2
   crystal-slots: 3
   buffs:
     walk_speed: 0.05
+    max_health: 4.0
+  permissions:
+    - "server.veteran"
+    - "server.expert"
+    - "server.journeyman"
+    - "server.apprentice"
+    - "server.novice"
 
 level-6:
-  tag: "&b[ᴠɪ]"
+  tag: "&6[&eHarmonizer&6]"
+  display-name: "Arcanite Harmonizer"
+  description: "One who can synchronize multiple crystal powers"
   requirements:
     money: 250000
     kills: 0
@@ -66,21 +103,41 @@ level-6:
   tier: 2
   crystal-slots: 3
   buffs:
-    max_health: 6.0
+    max_health: 6.0     # +3 hearts total
+  permissions:
+    - "server.champion"
+    - "server.veteran"
+    - "server.expert"
+    - "server.journeyman"
+    - "server.apprentice"
+    - "server.novice"
 
 level-7:
-  tag: "&d[ᴠɪɪ]"
+  tag: "&c[&4Catalyst&c]"
+  display-name: "Crystal Catalyst"
+  description: "A force that accelerates crystal potential"
   requirements:
     money: 500000
-    kills: 300
-    time: 144    # hours
+    kills: 150
+    time: 144    # hours (6 days)
   tier: 3
   crystal-slots: 4
   buffs:
     walk_speed: 0.07
+    max_health: 6.0
+  permissions:
+    - "server.hero"
+    - "server.champion"
+    - "server.veteran"
+    - "server.expert"
+    - "server.journeyman"
+    - "server.apprentice"
+    - "server.novice"
 
 level-8:
-  tag: "&d[ᴠɪɪɪ]"
+  tag: "&5[&dConduit&5]"
+  display-name: "Arcanite Conduit"
+  description: "A channel for immense crystal power"
   requirements:
     money: 750000
     kills: 0
@@ -88,26 +145,89 @@ level-8:
   tier: 3
   crystal-slots: 4
   buffs:
-    max_health: 8.0
+    max_health: 8.0     # +4 hearts total
+    attack_damage: 0.1  # Slight damage bonus
+  permissions:
+    - "server.legend"
+    - "server.hero"
+    - "server.champion"
+    - "server.veteran"
+    - "server.expert"
+    - "server.journeyman"
+    - "server.apprentice"
+    - "server.novice"
 
 level-9:
-  tag: "&c[ɪx]"
+  tag: "&4[&cNexus&4]"
+  display-name: "Crystal Nexus"
+  description: "A focal point of crystal energy"
   requirements:
     money: 1000000
-    kills: 500
+    kills: 250
     time: 280    # hours
   tier: 3
   crystal-slots: 5
   buffs:
     walk_speed: 0.10
+    max_health: 8.0
+    attack_damage: 0.1
+  permissions:
+    - "server.master"
+    - "server.legend"
+    - "server.hero"
+    - "server.champion"
+    - "server.veteran"
+    - "server.expert"
+    - "server.journeyman"
+    - "server.apprentice"
+    - "server.novice"
 
 level-10:
-  tag: "&4[x]"
+  tag: "&6[&e&lARCANUM&6]"
+  display-name: "Arcanite Arcanum"
+  description: "The ultimate master of crystal magic"
   requirements:
     money: 2000000
     kills: 0
-    time: 360    # hours
+    time: 360    # hours (15 days)
   tier: 3
   crystal-slots: 5
   buffs:
-    max_health: 10.0
+    max_health: 10.0    # +5 hearts total
+    walk_speed: 0.10
+    attack_damage: 0.15 # Notable damage bonus
+    knockback_resistance: 0.2 # Slight knockback resistance
+  permissions:
+    - "server.godlike"
+    - "server.master"
+    - "server.legend"
+    - "server.hero"
+    - "server.champion"
+    - "server.veteran"
+    - "server.expert"
+    - "server.journeyman"
+    - "server.apprentice"
+    - "server.novice"
+  commands:
+    - "broadcast &6&l{player} HAS ACHIEVED ARCANUM STATUS!"
+    - "give {player} minecraft:nether_star 1"
+
+# Level Descriptions and Lore:
+# Each level represents meaningful progression in the server community.
+# 
+# Level 1-3: Learning Phase - Players discover server features and mechanics
+# Level 4-6: Contributing Phase - Players become active community members
+# Level 7-9: Mastery Phase - Players achieve exceptional status and recognition
+# Level 10: Transcendence - Ultimate achievement representing complete server mastery
+#
+# Benefits are balanced to provide meaningful progression without being overpowered:
+# - Health: Gradual increase up to +5 hearts (double vanilla health)
+# - Speed: Modest movement enhancements for quality of life
+# - Damage: Slight bonuses for high-level achievement recognition
+# - Permissions: Hierarchical permission system for server features
+# - Commands: Special recognition and rewards for major milestones
+#
+# Crystal Integration:
+# - Crystal slots determine how many crystal effects can be active
+# - Tier determines the maximum power level of crystal effects
+# - This maintains crystal relevance while serving broader server purposes

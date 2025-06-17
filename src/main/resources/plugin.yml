@@ -19,17 +19,8 @@ website: https://github.com/LSD-MC/ArcaniteCrystals
 commands:
   arcanite:
     description: Main ArcaniteCrystals command - access all plugin features
-    usage: /arcanite <help|info|talents|give|mystery|reload|admin>
+    usage: /arcanite <help|talents|give|mystery|reload|admin|catalyst|stats|health>
     aliases: [arc, crystal]
-  givecrystal:
-    description: Give a blank Arcanite Crystal to a player
-    usage: /givecrystal <player>
-    permission: arcanite.give
-  mysterycrystal:
-    description: Receive a mystery Arcanite Crystal with random effects
-    usage: /mysterycrystal
-    permission: arcanite.mystery
-    aliases: [mystery]
   levelup:
     description: Level up if you meet the requirements
     usage: /levelup

@@ -181,14 +181,29 @@ public class EffectApplierManager {
         }
 
         ItemStack offHand = player.getInventory().getItemInOffHand();
-        if (!CrystalManager.isActivatedCrystal(offHand)) {
+        if (!CrystalManager.isCrystal(offHand)) {
+            return false; // No crystal in offhand, remove from list
+        }
+
+        // Check if player has an active crystal that matches offhand
+        ItemStack activeCrystal = CrystalManager.getActiveCrystal(player);
+        if (activeCrystal == null) {
             return false; // No active crystal, remove from list
         }
 
         // Get abilities with validation
-        List<String> abilities = CrystalManager.getAbilities(offHand);
+        List<String> abilities = CrystalManager.getCrystalEffects(offHand);
         if (abilities == null || abilities.isEmpty()) {
             return false; // No abilities, crystal may be corrupted
+        }
+
+        // Check energy before applying effects
+        int currentEnergy = CrystalManager.getEnergy(offHand);
+        if (currentEnergy <= 0) {
+            // Crystal depleted, stop effects and remove from active list
+            CrystalManager.stopCrystalEffects(player);
+            player.sendMessage(MessageManager.ERROR + "Your crystal has been depleted!");
+            return false;
         }
 
         // Apply potion effects with individual error handling
@@ -230,50 +245,65 @@ public class EffectApplierManager {
      */
     private static boolean drainCrystalEnergy(Player player, ItemStack crystal, long drainAmount) {
         try {
-            ItemMeta meta = crystal.getItemMeta();
-            if (meta == null) {
-                logRateLimited("Crystal has no metadata for player " + player.getName());
-                return false;
+            if (!CrystalManager.isCrystal(crystal)) {
+                return false; // Not a crystal
             }
 
             int currentEnergy = CrystalManager.getEnergy(crystal);
-            int remaining = Math.max(0, currentEnergy - (int) drainAmount);
-
-            if (remaining <= 0) {
-                // Crystal depleted - professional handling
-                meta.getPersistentDataContainer().set(KEY_ENERGY, PersistentDataType.INTEGER, 0);
-                crystal.setType(Material.GRAY_DYE);
-                crystal.setItemMeta(meta);
+            if (currentEnergy <= 0) {
+                // Crystal depleted - stop effects and notify
+                CrystalManager.stopCrystalEffects(player);
                 
-                // Professional depletion notification
-                String message = MessageManager.get("info.depleted");
-                if (message != null && !message.trim().isEmpty()) {
-                    player.sendMessage(message);
-                } else {
-                    // Fallback message
-                    player.sendMessage(MessageManager.ERROR + "Your crystal has run out of energy!");
-                }
-                
-                logger.fine("Crystal depleted for player " + player.getName());
+                MessageManager.sendNotification(player, 
+                    "Crystal depleted! Use quartz to recharge it.", 
+                    MessageManager.NotificationType.WARNING);
                 return false;
-                
-            } else {
-                // Update energy with validation
-                meta.getPersistentDataContainer().set(KEY_ENERGY, PersistentDataType.INTEGER, remaining);
-                crystal.setItemMeta(meta);
-                
-                // Low energy warning (professional UX)
-                double energyPercentage = (double) remaining / plugin.getConfig().getInt("crystal.energy", 18000);
-                if (energyPercentage <= 0.1 && Math.random() < 0.1) { // 10% chance at 10% energy
-                    player.sendMessage(MessageManager.WARNING + "⚠ Crystal energy low: " + 
-                                     MessageManager.ACCENT + (int)(energyPercentage * 100) + "%");
-                }
-                
-                return true;
             }
+
+            // Calculate new energy level
+            int newEnergy = Math.max(0, currentEnergy - (int) drainAmount);
+            
+            // Update crystal energy
+            CrystalManager.setEnergy(crystal, newEnergy);
+            
+            // Update the active crystal in memory
+            ItemStack activeCrystal = CrystalManager.getActiveCrystal(player);
+            if (activeCrystal != null) {
+                CrystalManager.setEnergy(activeCrystal, newEnergy);
+            }
+
+            // Professional energy level notifications
+            double energyPercent = (double) newEnergy / CrystalManager.getMaxEnergy(crystal) * 100;
+            
+            if (energyPercent <= 10 && energyPercent > 0) {
+                // Critical energy warning
+                MessageManager.sendNotification(player, 
+                    "⚠ Crystal energy critically low: " + String.format("%.0f%%", energyPercent), 
+                    MessageManager.NotificationType.WARNING);
+            } else if (energyPercent <= 25 && energyPercent > 10) {
+                // Low energy warning (rate limited)
+                long now = System.currentTimeMillis();
+                if (now - lastErrorLogTime > ERROR_LOG_INTERVAL) {
+                    MessageManager.sendNotification(player, 
+                        "Crystal energy low: " + String.format("%.0f%%", energyPercent), 
+                        MessageManager.NotificationType.INFO);
+                }
+            }
+
+            // Check if crystal just depleted
+            if (newEnergy <= 0) {
+                CrystalManager.stopCrystalEffects(player);
+                MessageManager.sendNotification(player, 
+                    "Crystal has been depleted! Use quartz to recharge.", 
+                    MessageManager.NotificationType.ERROR);
+                return false;
+            }
+
+            return true; // Continue processing this player
+            
         } catch (Exception e) {
-            logRateLimited("Failed to drain crystal energy for " + player.getName() + ": " + e.getMessage());
-            return true; // Don't remove on update failure - resilient approach
+            logRateLimited("Error draining crystal energy for " + player.getName() + ": " + e.getMessage());
+            return true; // Don't remove on error - retry next cycle
         }
     }
     
